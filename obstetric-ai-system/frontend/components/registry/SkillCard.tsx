@@ -17,9 +17,11 @@ interface SkillCardProps {
   status: 'up' | 'down';
   skills: SkillItem[];
   endpoint?: string;
+  /** Payload envoyé au clic Tester (défaut: { demo: true }) */
+  demoPayload?: Record<string, unknown>;
 }
 
-export default function SkillCard({ agentName, port, status, skills, endpoint }: SkillCardProps) {
+export default function SkillCard({ agentName, port, status, skills, endpoint, demoPayload }: SkillCardProps) {
   const [execResult, setExecResult] = useState<{ loading: boolean; data?: string; ok?: boolean; ms?: number } | null>(null);
   const [expanded, setExpanded] = useState(false);
 
@@ -31,7 +33,7 @@ export default function SkillCard({ agentName, port, status, skills, endpoint }:
       const res = await fetch(`http://localhost:${port}${ep}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ demo: true }),
+        body: JSON.stringify(demoPayload ?? { demo: true }),
         signal: AbortSignal.timeout(10000),
       });
       const data = await res.json().catch(() => res.text());
@@ -50,6 +52,9 @@ export default function SkillCard({ agentName, port, status, skills, endpoint }:
             <span className={`h-1.5 w-1.5 rounded-full ${status === 'up' ? 'bg-green-500' : 'bg-red-500'}`} />
             {status === 'up' ? 'Actif' : 'Inactif'}
           </span>
+          {execResult && !execResult.loading && execResult.ok && (
+            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">Vérifié</span>
+          )}
         </div>
       </div>
 

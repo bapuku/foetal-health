@@ -1,15 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import PageBanner from '@/components/ui/PageBanner';
 import {
   evaluatePrenatal,
+  generatePrenatalReport,
   getPrenatalNorms,
   screeningT21,
   screeningDiabetes,
   screeningGbs,
   healthPrenatal,
 } from '@/lib/api';
+import type { PrenatalReportOutput } from '@/lib/api';
 import type { PrenatalConsultation } from '@/lib/prenatal-types';
 
 const MOCK_PATIENTS = [
@@ -43,6 +45,11 @@ export default function PrenatalPage() {
   const [sa, setSa] = useState(MOCK_PATIENTS[0]?.sa ?? 28);
   const [agentUp, setAgentUp] = useState(false);
   const [alertes, setAlertes] = useState<{ type: string; message: string; severite: string }[]>([]);
+  const [lastAuditHash, setLastAuditHash] = useState<string | null>(null);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [report, setReport] = useState<PrenatalReportOutput | null>(null);
+  const [reportLoading, setReportLoading] = useState(false);
+  const reportPrintRef = useRef<HTMLDivElement>(null);
   const [norms, setNorms] = useState<Record<string, unknown> | null>(null);
   const [t21Risk, setT21Risk] = useState<string>('0.0004');
   const [t21Result, setT21Result] = useState<{ palier: string; message: string } | null>(null);
@@ -73,13 +80,55 @@ export default function PrenatalPage() {
 
   const handleEvaluate = () => {
     const dossier = {
+      patientId,
       calendar: { items: TIMELINE_ITEMS.map((i) => ({ ...i, status: statusForItem(i.id, sa, i.saMin, i.saMax, realisedItems), saCibleMax: i.saMax })) },
       consultations: [],
       biologicalExams: [],
     };
     evaluatePrenatal(dossier as unknown as Record<string, unknown>, sa)
-      .then((r) => setAlertes(r.alertes || []))
-      .catch(() => setAlertes([{ type: 'Agent', message: 'Agent indisponible.', severite: 'info' }]));
+      .then((r) => {
+        setAlertes(r.alertes || []);
+        setLastAuditHash((r as { audit_hash?: string }).audit_hash ?? null);
+      })
+      .catch(() => {
+        setAlertes([{ type: 'Agent', message: 'Agent indisponible.', severite: 'info' }]);
+        setLastAuditHash(null);
+      });
+  };
+
+  const handleGenerateReport = () => {
+    setReportLoading(true);
+    setReport(null);
+    setReportModalOpen(true);
+    const dossier = {
+      patientId,
+      calendar: { items: TIMELINE_ITEMS.map((i) => ({ ...i, status: statusForItem(i.id, sa, i.saMin, i.saMax, realisedItems) })) },
+      consultations: [],
+      biologicalExams: [],
+    };
+    generatePrenatalReport({
+      patient_id: patientId,
+      dossier,
+      consultation_data: { ...consultation, sa },
+      screening_results: {
+        t21: t21Result ? { palier: t21Result.palier, message: t21Result.message } : undefined,
+        diabetes: dgResult ? { diagnostic_dg: dgResult.diagnostic_dg, message: dgResult.message } : undefined,
+        gbs: gbsResult ? { resultat: gbsResult.resultat, sa: gbsResult.sa } : undefined,
+      },
+      sa,
+    })
+      .then((r) => setReport(r))
+      .catch(() => setReport(null))
+      .finally(() => setReportLoading(false));
+  };
+
+  const handlePrintReport = () => {
+    if (reportPrintRef.current) {
+      const prevTitle = document.title;
+      document.title = `Rapport_prenatal_${patientId}_${sa}SA`;
+      window.print();
+      document.title = prevTitle;
+    }
   };
 
   const handleT21 = () => {
@@ -141,15 +190,47 @@ export default function PrenatalPage() {
 
       {/* Alertes */}
       {alertes.length > 0 && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-          <p className="mb-2 text-sm font-semibold text-amber-900">Alertes</p>
-          <ul className="list-inside list-disc text-sm text-amber-800">
+        <div
+          className={`rounded-lg border p-3 ${
+            alertes.some((a) => a.severite === 'critical')
+              ? 'border-red-300 bg-red-50'
+              : alertes.some((a) => a.severite === 'warning')
+                ? 'border-amber-300 bg-amber-50'
+                : 'border-amber-200 bg-amber-50'
+          }`}
+        >
+          <p className="mb-2 text-sm font-semibold text-slate-900">Alertes</p>
+          <ul className="list-inside list-disc text-sm text-slate-800">
             {alertes.map((a, i) => (
-              <li key={i}>
+              <li
+                key={i}
+                className={
+                  a.severite === 'critical'
+                    ? 'text-red-800 font-medium'
+                    : a.severite === 'warning'
+                      ? 'text-amber-800'
+                      : 'text-amber-700'
+                }
+              >
                 [{a.severite}] {a.message}
               </li>
             ))}
           </ul>
+          {alertes.some((a) => a.severite === 'critical') && (
+            <p className="mt-2 text-xs text-red-700">
+              En cas d&apos;urgence (critique), alerte SMS / WhatsApp / Email envoyée à l&apos;équipe médicale.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Tracabilité audit (preuve des examens) */}
+      {lastAuditHash && (
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-2 text-xs text-slate-600">
+          <span className="font-medium text-slate-700">Preuve d&apos;évaluation (audit SHA-256) :</span>{' '}
+          <code className="break-all rounded bg-white px-1" title="Hash de la chaîne d&apos;audit">
+            {lastAuditHash}
+          </code>
         </div>
       )}
 
@@ -178,13 +259,22 @@ export default function PrenatalPage() {
             );
           })}
         </div>
-        <button
-          type="button"
-          onClick={handleEvaluate}
-          className="mt-3 rounded bg-slate-800 px-3 py-1.5 text-sm text-white hover:bg-slate-700"
-        >
-          Évaluer conformité
-        </button>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={handleEvaluate}
+            className="rounded bg-slate-800 px-3 py-1.5 text-sm text-white hover:bg-slate-700"
+          >
+            Évaluer conformité
+          </button>
+          <button
+            type="button"
+            onClick={handleGenerateReport}
+            className="rounded border border-slate-600 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+          >
+            Générer rapport
+          </button>
+        </div>
       </section>
 
       {/* Consultation clinique */}
@@ -364,6 +454,63 @@ export default function PrenatalPage() {
           <p className="mt-2 text-sm text-slate-600">{gbsResult.resultat}</p>
         )}
       </section>
+
+      {/* Modale rapport médico-diagnostique */}
+      {reportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
+            <div className="sticky top-0 flex items-center justify-between border-b border-slate-200 bg-white p-3">
+              <h2 className="text-lg font-semibold text-slate-900">Rapport médico-diagnostique — {patientId} — {sa} SA</h2>
+              <button
+                type="button"
+                onClick={() => setReportModalOpen(false)}
+                className="rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                aria-label="Fermer"
+              >
+                ×
+              </button>
+            </div>
+            <div ref={reportPrintRef} className="p-4 print:block">
+              {reportLoading && <p className="text-sm text-slate-500">Génération du rapport…</p>}
+              {report && !reportLoading && (
+                <>
+                  {report.model_used && (
+                    <p className="mb-2 text-xs text-slate-500">
+                      Modèle IA : {report.model_used} — Tracabilité : hash audit {report.audit_hash?.slice(0, 16)}…
+                    </p>
+                  )}
+                  {report.sections && (
+                    <div className="space-y-3 text-sm">
+                      {Object.entries(report.sections).map(([key, value]) => (
+                        <div key={key}>
+                          <h3 className="font-medium capitalize text-slate-700">
+                            {key.replace(/_/g, ' ')}
+                          </h3>
+                          <p className="mt-0.5 whitespace-pre-wrap text-slate-600">{value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+              {!report && !reportLoading && (
+                <p className="text-sm text-slate-500">Impossible de générer le rapport.</p>
+              )}
+            </div>
+            {report && !reportLoading && (
+              <div className="border-t border-slate-200 p-3">
+                <button
+                  type="button"
+                  onClick={handlePrintReport}
+                  className="rounded bg-slate-800 px-3 py-1.5 text-sm text-white hover:bg-slate-700"
+                >
+                  Exporter en PDF (impression)
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

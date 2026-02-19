@@ -58,13 +58,14 @@ def _ml_predict(signal: Optional[list[float]]) -> tuple[int, float]:
 
 def _llm_analyze(baseline_bpm: float, stv_ms: float, ml_class: int, confidence: float) -> str:
     model_id = router_llm.route(task=TaskType.FAST_ANALYSIS, urgency="critical")
+    api_model = router_llm.get_api_model_id(model_id)
     prompt = f"""Tu es un expert obstétricien. CTG: baseline FHR={baseline_bpm} bpm, STV={stv_ms} ms.
 Classification ML: {CLASSES[ml_class]} (confiance {confidence:.2f}). Donne un résumé narratif ~150 mots selon FIGO 2015, avec recommandations. Pas de diagnostic final."""
     try:
-        if "anthropic" in model_id or "claude" in model_id.lower():
+        if "claude" in model_id.lower():
             import anthropic
             c = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY", ""))
-            r = c.messages.create(model="claude-sonnet-4-20250514", max_tokens=512, messages=[{"role": "user", "content": prompt}])
+            r = c.messages.create(model=api_model, max_tokens=512, messages=[{"role": "user", "content": prompt}])
             text = r.content[0].text if r.content else ""
         else:
             text = f"Analyse FIGO: baseline {baseline_bpm} bpm, variabilité STV {stv_ms} ms. Classification {CLASSES[ml_class]}. Validation clinique recommandée."

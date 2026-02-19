@@ -6,8 +6,8 @@ Run from repo root with agent deps installed:
 """
 import sys
 from pathlib import Path
-
 root = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(root))
 sys.path.insert(0, str(root / "agents" / "prenatal-followup"))
 
 from src.main import app
@@ -159,3 +159,57 @@ def test_screening_gbs_positive():
     assert r.status_code == 200
     data = r.json()
     assert data["antibioprophylaxie_prevue"] is True
+
+
+def test_evaluate_with_audit_hash():
+    dossier = {"calendar": {"items": []}, "consultations": [], "biologicalExams": []}
+    r = client.post("/api/prenatal-followup/evaluate", json={"dossier": dossier, "sa_courante": 20})
+    assert r.status_code == 200
+    data = r.json()
+    assert "audit_hash" in data
+    assert data["audit_hash"] is None or (isinstance(data["audit_hash"], str) and len(data["audit_hash"]) > 10)
+
+
+def test_report_generation():
+    r = client.post(
+        "/api/prenatal-followup/report",
+        json={
+            "patient_id": "P-TEST",
+            "dossier": {},
+            "consultation_data": {"sa": 28, "paSystolique": 120, "paDiastolique": 75},
+            "screening_results": {},
+            "sa": 28,
+        },
+    )
+    assert r.status_code == 200
+    data = r.json()
+    assert "sections" in data
+    assert "sa" in data
+    assert data["sa"] == 28
+    assert "model_used" in data
+    assert "audit_hash" in data or "audit_input_hash" in data
+
+
+def test_emergency_alert_dispatch():
+    """Critical HTA triggers alert; with mock we could assert send_sms/send_email called."""
+    dossier = {
+        "calendar": {"items": []},
+        "consultations": [{"paSystolique": 170, "paDiastolique": 115, "bcfBpm": 140}],
+        "biologicalExams": [],
+    }
+    r = client.post("/api/prenatal-followup/evaluate", json={"dossier": dossier, "sa_courante": 28})
+    assert r.status_code == 200
+    data = r.json()
+    assert any(a.get("severite") == "critical" for a in data.get("alertes", []))
+
+
+def test_llm_narrative_fallback():
+    """Evaluate returns a narrative (LLM or rule-based fallback)."""
+    dossier = {"calendar": {"items": []}, "consultations": [], "biologicalExams": []}
+    r = client.post("/api/prenatal-followup/evaluate", json={"dossier": dossier, "sa_courante": 28})
+    assert r.status_code == 200
+    data = r.json()
+    assert "narrative" in data
+    assert isinstance(data["narrative"], str)
+    assert len(data["narrative"]) > 20
+    assert "SA" in data["narrative"] or "calendrier" in data["narrative"].lower()

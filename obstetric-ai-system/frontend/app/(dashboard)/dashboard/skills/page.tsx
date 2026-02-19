@@ -9,6 +9,8 @@ interface AgentSkills {
   port: number;
   endpoint?: string;
   skills: SkillItem[];
+  /** Payload envoyé au clic "Tester" (sinon { demo: true }) */
+  demoPayload?: Record<string, unknown>;
 }
 
 const AGENTS_SKILLS: AgentSkills[] = [
@@ -99,6 +101,23 @@ const AGENTS_SKILLS: AgentSkills[] = [
       { name: 'Communication patiente', description: 'Messages et education patiente.', inputs: 'contexte', outputs: 'messages, satisfaction_score' },
     ],
   },
+  {
+    name: 'Prenatal Follow-up',
+    port: 8010,
+    endpoint: '/api/prenatal-followup/evaluate',
+    demoPayload: {
+      dossier: { patientId: 'P-2024-0847', calendar: { items: [] }, consultations: [], biologicalExams: [] },
+      sa_courante: 28,
+    },
+    skills: [
+      { name: 'Evaluation calendrier CSP', description: 'Conformite 7 consultations + EPP + 3 echos (CSP R2122-1/R2122-2).', inputs: 'dossier, sa', outputs: 'conforme, alertes, narrative, audit_hash', model: 'Opus 4.5 / Sonnet 4.5', latencyMs: 2000 },
+      { name: 'Depistage T21 3 paliers', description: 'HAS 2017 : risque combine, DPNI, caryotype.', inputs: 'risque_combine', outputs: 'palier, indication_dpni, recommandation', latencyMs: 100 },
+      { name: 'Depistage DG IADPSG', description: 'HGPO 75 g, criteres CNGOF/SFD 2010.', inputs: 'h0, h1, h2', outputs: 'diagnostic_dg, anomalies', latencyMs: 100 },
+      { name: 'Depistage SGB', description: 'Streptocoque B 34-38 SA, antibioprophylaxie.', inputs: 'sa_prelevement, resultat', outputs: 'antibioprophylaxie_prevue', latencyMs: 100 },
+      { name: 'Normes biologiques', description: 'Hb, plaquettes, ferritine, TSH, PA, BCF par trimestre.', inputs: 'sa', outputs: 'normes T1/T2/T3', latencyMs: 50 },
+      { name: 'Rapport medico-diagnostique', description: 'Rapport structure par consultation (LLM + audit).', inputs: 'dossier, consultation, screenings', outputs: 'sections, FHIR DiagnosticReport', model: 'Opus 4.5', latencyMs: 4000 },
+    ],
+  },
 ];
 
 export default function SkillsPage() {
@@ -130,6 +149,7 @@ export default function SkillsPage() {
             status={statuses[agent.port] ?? 'down'}
             skills={agent.skills}
             endpoint={agent.endpoint}
+            demoPayload={agent.demoPayload}
           />
         ))}
       </div>

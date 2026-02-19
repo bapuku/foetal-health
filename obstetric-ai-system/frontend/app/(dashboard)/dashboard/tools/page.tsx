@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import ToolCard, { type ToolCategory } from '@/components/registry/ToolCard';
 import PageBanner from '@/components/ui/PageBanner';
+
+const STORAGE_KEY = 'obstetric-tools-active';
 
 interface ToolDef {
   id: string;
@@ -17,6 +19,10 @@ const TOOLS: ToolDef[] = [
   { id: 'bishop', name: 'Calculateur Bishop', description: 'Score de Bishop pour maturation cervicale et prediction travail.', category: 'medical', status: 'active', version: '1.0' },
   { id: 'rciu', name: 'Calculateur RCIU', description: 'Percentiles et evaluation restriction croissance intra-uterine.', category: 'medical', status: 'active', version: '1.0' },
   { id: 'apgar', name: 'Score Apgar', description: 'Evaluation adaptation neonatale a 1 et 5 minutes.', category: 'medical', status: 'active', version: '1.0' },
+  { id: 'prenatal-calendar', name: 'Prenatal Calendar', description: 'Calendrier 7 consultations + EPP + 3 echos (CSP R2122), normes biologiques par trimestre.', category: 'medical', status: 'active', version: '1.0' },
+  { id: 'screening-t21', name: 'Screening T21', description: 'Depistage trisomie 21 (3 paliers HAS 2017), DPNI, caryotype.', category: 'medical', status: 'active', version: '1.0' },
+  { id: 'hgpo-calculator', name: 'HGPO Calculator', description: 'Diabete gestationnel : HGPO 75 g, criteres IADPSG (CNGOF/SFD 2010).', category: 'medical', status: 'active', version: '1.0' },
+  { id: 'gbs-screening', name: 'GBS Screening', description: 'Streptocoque B (34-38 SA), antibioprophylaxie per-partum.', category: 'medical', status: 'active', version: '1.0' },
   { id: 'doppler', name: 'Doppler uterins', description: 'Indices Doppler arteres uterines et umbilicale.', category: 'medical', status: 'inactive', version: '0.9' },
   { id: 'biometrie', name: 'Biometrie foetale', description: 'Estimation poids foetal et percentiles (HC, AC, FL).', category: 'medical', status: 'active', version: '1.0' },
   { id: 'llm-router', name: 'LLM Router', description: 'Claude, Mistral HF, Granite HF, GPT-4o - routage par tache et complexite.', category: 'ai', status: 'active', version: '1.0' },
@@ -41,6 +47,22 @@ const CATEGORIES: { value: ToolCategory | 'all'; label: string }[] = [
 export default function ToolsPage() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<ToolCategory | 'all'>('all');
+  const [activeOverrides, setActiveOverrides] = useState<Record<string, boolean>>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      return JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? '{}');
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(activeOverrides));
+    } catch {
+      // ignore
+    }
+  }, [activeOverrides]);
 
   const filtered = useMemo(() => {
     return TOOLS.filter((t) => {
@@ -49,6 +71,15 @@ export default function ToolsPage() {
       return matchSearch && matchCat;
     });
   }, [search, category]);
+
+  const effectiveStatus = (tool: ToolDef): 'active' | 'inactive' => {
+    if (tool.id in activeOverrides) return activeOverrides[tool.id] ? 'active' : 'inactive';
+    return tool.status;
+  };
+
+  const handleToggle = (toolId: string) => {
+    setActiveOverrides((prev) => ({ ...prev, [toolId]: !(prev[toolId] ?? TOOLS.find((t) => t.id === toolId)?.status === 'active') }));
+  };
 
   return (
     <div className="space-y-6">
@@ -88,11 +119,13 @@ export default function ToolsPage() {
         {filtered.map((tool) => (
           <ToolCard
             key={tool.id}
+            id={tool.id}
             name={tool.name}
             description={tool.description}
             category={tool.category}
-            status={tool.status}
+            status={effectiveStatus(tool)}
             version={tool.version}
+            onToggleActive={() => handleToggle(tool.id)}
           />
         ))}
       </div>

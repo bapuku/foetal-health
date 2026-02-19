@@ -166,6 +166,44 @@ export async function getPrenatalNorms(sa: number): Promise<Record<string, unkno
   return res.json();
 }
 
+export interface PrenatalReportInput {
+  patient_id: string;
+  dossier?: Record<string, unknown>;
+  consultation_data?: Record<string, unknown>;
+  screening_results?: Record<string, unknown>;
+  sa: number;
+}
+
+export interface PrenatalReportOutput {
+  sections: Record<string, string>;
+  sa: number;
+  audit_input_hash?: string;
+  audit_output_hash?: string;
+  audit_hash?: string;
+  model_used?: string;
+  patient_id?: string;
+  fhir_diagnostic_report?: Record<string, unknown>;
+}
+
+export async function generatePrenatalReport(params: PrenatalReportInput): Promise<PrenatalReportOutput> {
+  const res = await fetch(`${PRENATAL_BASE}/api/prenatal-followup/report`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      patient_id: params.patient_id,
+      dossier: params.dossier,
+      consultation_data: params.consultation_data,
+      screening_results: params.screening_results,
+      sa: params.sa,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error((err as { detail?: string }).detail || res.statusText);
+  }
+  return res.json();
+}
+
 export async function healthPrenatal(): Promise<{ status: string; agent: string }> {
   const res = await fetch(`${PRENATAL_BASE}/health`);
   if (!res.ok) throw new Error(res.statusText);

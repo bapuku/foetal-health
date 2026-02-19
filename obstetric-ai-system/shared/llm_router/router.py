@@ -12,18 +12,27 @@ class TaskType(str, Enum):
     MULTIMODAL = "multimodal"
     FHIR_EXTRACTION = "fhir_extraction"
     EU_SOVEREIGN = "eu_sovereign"
+    PRENATAL_ANALYSIS = "prenatal_analysis"
     DEFAULT = "default"
 
 class LLMRouter:
     MODELS = {
-        "claude-opus-4": {"tier": "premium", "latency_ms": 5000, "task": TaskType.REASONING},
+        "claude-opus-4-5": {"tier": "premium", "latency_ms": 6000, "task": TaskType.REASONING},
+        "claude-sonnet-4-5": {"tier": "standard+", "latency_ms": 1800, "task": TaskType.FAST_ANALYSIS},
         "claude-sonnet-4": {"tier": "standard", "latency_ms": 1500, "task": TaskType.FAST_ANALYSIS},
         "gpt-4o": {"tier": "multimodal", "latency_ms": 3000, "task": TaskType.MULTIMODAL},
+        "gpt-5.2": {"tier": "ultra", "latency_ms": 8000, "task": TaskType.REASONING},
         "o3": {"tier": "ultra", "latency_ms": 15000, "task": TaskType.REASONING},
         "mistral-large": {"tier": "eu-sovereign", "latency_ms": 2000, "task": TaskType.EU_SOVEREIGN},
         "granite-medical": {"tier": "fhir", "latency_ms": 500, "task": TaskType.FHIR_EXTRACTION},
     }
-    FALLBACK_CHAIN = ["claude-opus-4", "claude-sonnet-4", "mistral-large"]
+    FALLBACK_CHAIN = ["claude-opus-4-5", "claude-sonnet-4-5", "claude-sonnet-4", "mistral-large"]
+    # Map logical model id to API model string for providers
+    API_MODEL_IDS = {
+        "claude-opus-4-5": "claude-opus-4-5-20251101",
+        "claude-sonnet-4-5": "claude-sonnet-4-20250514",
+        "claude-sonnet-4": "claude-sonnet-4-20250514",
+    }
 
     def __init__(self, failure_threshold: int = 3, reset_timeout_seconds: int = 60):
         self._failures: dict[str, int] = {}
@@ -45,13 +54,19 @@ class LLMRouter:
             return self._try_model("gpt-4o")
         if task == TaskType.FHIR_EXTRACTION:
             return self._try_model("granite-medical")
+        if task == TaskType.PRENATAL_ANALYSIS:
+            return self._try_model("claude-opus-4-5")
         if task == TaskType.FAST_ANALYSIS or urgency == "critical":
-            return self._try_model("claude-sonnet-4")
+            return self._try_model("claude-sonnet-4-5")
         if task == TaskType.REASONING and complexity == "high":
             return self._try_model("o3")
         if task == TaskType.RESEARCH:
-            return self._try_model("claude-opus-4")
-        return self._try_model("claude-opus-4")
+            return self._try_model("claude-opus-4-5")
+        return self._try_model("claude-opus-4-5")
+
+    def get_api_model_id(self, model_id: str) -> str:
+        """Resolve logical model id to provider API model string."""
+        return self.API_MODEL_IDS.get(model_id, model_id)
 
     def _try_model(self, model_id: str) -> str:
         import time
