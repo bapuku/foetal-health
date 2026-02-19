@@ -10,7 +10,7 @@ async function getFhirBase(): Promise<string> {
   } catch {
     cachedFhirBase = process.env.NEXT_PUBLIC_FHIR_BASE_URL || 'http://localhost:8080/fhir';
   }
-  return cachedFhirBase;
+  return cachedFhirBase ?? 'http://localhost:8080/fhir';
 }
 
 export async function fhirGet<T>(path: string): Promise<T> {
