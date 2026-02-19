@@ -71,7 +71,7 @@ Le script `start.sh` fait tout automatiquement :
 ./stop.sh
 ```
 
-**URLs :**
+**URLs (développement local) :**
 | Service             | URL                          |
 |---------------------|------------------------------|
 | Frontend            | http://localhost:3000         |
@@ -88,6 +88,19 @@ Le script `start.sh` fait tout automatiquement :
 
 Logs : `logs/` (un fichier par agent + frontend)
 
+## Déploiement VPS (OVH)
+
+Le VPS `51.77.144.54` héberge deux applications sur des ports différents :
+
+| Application | URL | Port |
+|---|---|---|
+| AEGIS CARE (médecine thérapeutique) | http://51.77.144.54 | 80 |
+| **Obstetric AI (santé fœtale)** | **http://51.77.144.54:8090** | **8090** |
+
+Après `./deploy.sh`, ouvrir **http://51.77.144.54:8090** dans le navigateur.
+
+> **Attention** : le port 80 (`http://51.77.144.54`) est AEGIS CARE, pas cette application. Ne pas utiliser `http://frontend` (nom Docker interne, non résolvable en DNS).
+
 ## Démarrage rapide (production / K8s)
 
 1. **Infrastructure** : `cd terraform && terraform init && terraform plan -var-file=terraform.tfvars`
@@ -98,6 +111,6 @@ Logs : `logs/` (un fichier par agent + frontend)
 ## Conformité
 
 - Audit trail : SHA-256 hash chain (shared/audit_logger)
-- Anonymisation : k-anonymity (k≥5), differential privacy ε=1.0 (shared/anonymization)
+- Anonymisation : k-anonymity (k>=5), differential privacy epsilon=1.0 (shared/anonymization)
 - Consentement : FHIR Consent (shared/fhir_consent)
-- HITL : CTG pathologique, Apgar 5min ≤ 6 (pause + notification)
+- HITL : CTG pathologique, Apgar 5min <= 6 (pause + notification)

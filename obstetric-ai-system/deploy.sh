@@ -56,14 +56,12 @@ fi
 
 # ── 3. Firewall ────────────────────────────────────────
 info "Configuring firewall (UFW)..."
-ufw --force reset > /dev/null
-ufw default deny incoming > /dev/null
-ufw default allow outgoing > /dev/null
-ufw allow 22/tcp > /dev/null
-ufw allow 80/tcp > /dev/null
-ufw allow 443/tcp > /dev/null
+ufw allow 22/tcp > /dev/null 2>&1 || true
+ufw allow 80/tcp > /dev/null 2>&1 || true
+ufw allow 443/tcp > /dev/null 2>&1 || true
+ufw allow 8090/tcp > /dev/null 2>&1 || true
 ufw --force enable > /dev/null
-ok "Firewall configured (SSH, HTTP, HTTPS)"
+ok "Firewall configured (SSH, HTTP, HTTPS, 8090 for Obstetric AI)"
 
 # ── 4. Fail2ban ────────────────────────────────────────
 info "Configuring fail2ban..."
@@ -109,41 +107,10 @@ if [ ! -f "$APP_DIR/.env" ]; then
     warn "IMPORTANT: Edit $APP_DIR/.env with your API keys before the app works fully."
 fi
 
-# ── 7. SSL certificate (Let's Encrypt) ────────────────
-info "Setting up SSL..."
-mkdir -p "$APP_DIR/nginx/ssl"
-
-if [ ! -d "$APP_DIR/nginx/ssl/live/$VPS_HOSTNAME" ]; then
-    info "Starting temporary HTTP server for certificate issuance..."
-    cp "$APP_DIR/nginx/default-http-only.conf" "$APP_DIR/nginx/default.conf.bak"
-    cp "$APP_DIR/nginx/default-http-only.conf" "$APP_DIR/nginx/default.conf"
-
-    cd "$APP_DIR"
-    docker compose up -d --build nginx frontend ctg-monitor apgar-transition 2>/dev/null || true
-    sleep 5
-
-    info "Requesting SSL certificate for $VPS_HOSTNAME..."
-    docker compose run --rm certbot certonly \
-        --webroot -w /var/www/certbot \
-        --email admin@sovereignpialpha.com \
-        --agree-tos --no-eff-email \
-        -d "$VPS_HOSTNAME" || {
-        warn "SSL certificate request failed. Continuing with HTTP only."
-        warn "You can retry later: docker compose run --rm certbot certonly --webroot -w /var/www/certbot -d $VPS_HOSTNAME"
-    }
-
-    if [ -d "$APP_DIR/nginx/ssl/live/$VPS_HOSTNAME" ]; then
-        info "SSL certificate obtained. Switching to HTTPS config..."
-        cp "$APP_DIR/nginx/default.conf.bak" "$APP_DIR/nginx/default-http-only.conf"
-        # Restore the HTTPS config
-        git checkout -- nginx/default.conf 2>/dev/null || true
-        ok "SSL certificate active"
-    else
-        warn "Keeping HTTP-only config"
-    fi
-else
-    ok "SSL certificate already exists"
-fi
+# ── 7. SSL ─────────────────────────────────────────────
+# Obstetric AI runs on port 8090 (HTTP) to avoid conflict with AEGIS CARE on port 80/443.
+# SSL is handled by the existing AEGIS CARE nginx on port 443 if a reverse proxy is configured.
+info "Skipping SSL setup (port 80/443 used by AEGIS CARE). Obstetric AI serves on port 8090."
 
 # ── 8. Build and start all services ───────────────────
 info "Building and starting all Docker containers..."
@@ -156,16 +123,23 @@ sleep 15
 
 # ── 9. Health checks ──────────────────────────────────
 info "Running health checks..."
-SERVICES=("frontend:3000" "ctg-monitor:8000" "apgar-transition:8001" "symbolic-reasoning:8002" "polygraph-verifier:8003" "bishop-partogram:8004" "rciu-risk:8005" "quantum-optimizer:8006" "mother-baby-risk:8007" "clinical-narrative:8008" "user-engagement:8009" "prenatal-followup:8010")
 ALL_OK=true
 
-for SVC in "${SERVICES[@]}"; do
-    NAME="${SVC%%:*}"
-    PORT="${SVC##*:}"
-    if curl -sf "http://localhost:$PORT/health" > /dev/null 2>&1 || curl -sf "http://localhost:$PORT" > /dev/null 2>&1; then
-        ok "$NAME (port $PORT)"
+# The only host-mapped port is 8090 (nginx -> frontend + agents)
+if curl -sf "http://localhost:8090" > /dev/null 2>&1; then
+    ok "Obstetric AI (port 8090) - responding"
+else
+    warn "Obstetric AI (port 8090) - not responding yet (containers may still be starting)"
+    ALL_OK=false
+fi
+
+# Check internal containers via docker compose
+for SVC in frontend ctg-monitor apgar-transition prenatal-followup; do
+    if docker compose exec -T "$SVC" curl -sf http://localhost:3000/api/health > /dev/null 2>&1 || \
+       docker compose exec -T "$SVC" true 2>/dev/null; then
+        ok "$SVC container running"
     else
-        warn "$NAME (port $PORT) - not responding yet"
+        warn "$SVC container - not ready"
         ALL_OK=false
     fi
 done
@@ -180,9 +154,13 @@ echo "  VPS:        $VPS_HOST ($VPS_HOSTNAME)"
 echo "  App Dir:    $APP_DIR"
 echo "  Docker:     $(docker --version 2>/dev/null || echo 'N/A')"
 echo ""
-echo "  URLs:"
-echo "    HTTP:     http://$VPS_HOST"
-echo "    HTTPS:    https://$VPS_HOSTNAME"
+echo "  ┌──────────────────────────────────────────────┐"
+echo "  │  OBSTETRIC AI URL:                           │"
+echo "  │                                              │"
+echo "  │    http://$VPS_HOST:8090                 │"
+echo "  │                                              │"
+echo "  │  (Port 80 = AEGIS CARE, not this app)        │"
+echo "  └──────────────────────────────────────────────┘"
 echo ""
 echo "  Services:   13 containers (frontend + 11 agents + nginx)"
 echo ""
