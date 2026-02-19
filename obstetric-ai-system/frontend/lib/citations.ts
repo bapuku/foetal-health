@@ -154,6 +154,41 @@ export const CLINICAL_REFERENCES: HarvardCitation[] = [
     journal: 'Archives de Pediatrie',
     type: 'guideline',
   },
+  {
+    id: 'has2016suivi',
+    authors: 'HAS',
+    year: 2016,
+    title: 'Suivi et orientation des femmes enceintes en fonction des situations a risque identifiees.',
+    journal: 'Recommandations HAS',
+    type: 'guideline',
+    url: 'https://www.has-sante.fr',
+  },
+  {
+    id: 'has2017t21',
+    authors: 'HAS',
+    year: 2017,
+    title: 'Depistage de la trisomie 21 par marqueurs seriques et DPNI. Strategie a 3 paliers.',
+    journal: 'Recommandations HAS',
+    type: 'guideline',
+    url: 'https://www.has-sante.fr',
+  },
+  {
+    id: 'csp2122',
+    authors: 'Code de la Sante Publique',
+    year: 2021,
+    title: 'Articles L2122-1, R2122-1, R2122-2 : examens prenataux obligatoires (7 consultations).',
+    publisher: 'Legifrance',
+    type: 'guideline',
+    url: 'https://www.legifrance.gouv.fr',
+  },
+  {
+    id: 'cngofsfd2010dg',
+    authors: 'CNGOF, SFD',
+    year: 2010,
+    title: 'Diabete gestationnel. Critères IADPSG (HGPO 75 g).',
+    journal: 'Gynecologie Obstetrique Fertilite Senologie',
+    type: 'guideline',
+  },
 ];
 
 export const MODEL_REFERENCES: HarvardCitation[] = [

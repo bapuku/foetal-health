@@ -98,5 +98,45 @@
     "year": 2014,
     "chunk_text": "Methode Kangourou (peau a peau) : recommandee pour les nouveau-nes, en particulier prematures et faible poids. Ameliore la thermoregulation, l'allaitement et le lien. Recommandation OMS pour les soins neonataux essentiels.",
     "metadata": { "type": "guideline" }
+  },
+  {
+    "id": "csp-prenatal-1",
+    "source": "CSP",
+    "source_id": "csp2122",
+    "title": "Examens prenataux obligatoires.",
+    "authors": "Code de la Sante Publique",
+    "year": 2021,
+    "chunk_text": "Articles R2122-1 et R2122-2 CSP : sept examens prenataux obligatoires. Premier avant 15 SA, puis mensuels. Contenu : examen clinique, proteinurie, glycosurie. Bilan T1 : groupage, RAI, serologies, Ag HBs 6e mois. EPP obligatoire depuis 2020.",
+    "metadata": { "type": "guideline" }
+  },
+  {
+    "id": "has2017t21-1",
+    "source": "HAS",
+    "source_id": "has2017t21",
+    "title": "Depistage trisomie 21. Strategie a 3 paliers.",
+    "authors": "HAS",
+    "year": 2017,
+    "chunk_text": "Depistage T21 : risque combine T1. Trois paliers : < 1/1000 surveillance standard ; 1/1000-1/51 proposition DPNI ; >= 1/50 proposition caryotype. Consentement ecrit. DPNI sensibilité > 99,6 %.",
+    "metadata": { "type": "guideline" }
+  },
+  {
+    "id": "has2016suivi-1",
+    "source": "HAS",
+    "source_id": "has2016suivi",
+    "title": "Suivi des femmes enceintes.",
+    "authors": "HAS",
+    "year": 2016,
+    "chunk_text": "HAS 2016 : suivi et orientation. Huit consultations dont une avant 10 SA. Toxo mensuelle si non immunisee. Trois echographies T1 T2 T3.",
+    "metadata": { "type": "guideline" }
+  },
+  {
+    "id": "cngof2010dg-1",
+    "source": "CNGOF/SFD",
+    "source_id": "cngofsfd2010dg",
+    "title": "Diabete gestationnel. Criteres IADPSG.",
+    "authors": "CNGOF, SFD",
+    "year": 2010,
+    "chunk_text": "DG : HGPO 75 g entre 24-28 SA. IADPSG : a jeun >= 0,92 ; H1 >= 1,80 ; H2 >= 1,53 g/L. Une valeur depassee = diagnostic.",
+    "metadata": { "type": "guideline" }
   }
 ]

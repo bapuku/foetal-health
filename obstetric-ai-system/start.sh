@@ -112,7 +112,7 @@ start_agent() {
 }
 
 start_backend() {
-  info "Lancement des 10 agents backend..."
+  info "Lancement des 11 agents backend..."
   echo ""
 
   start_agent "ctg-monitor"        "ctg_monitor"       8000
@@ -125,6 +125,7 @@ start_backend() {
   start_agent "mother-baby-risk"   "mother-baby-risk"    8007
   start_agent "clinical-narrative" "clinical-narrative"  8008
   start_agent "user-engagement"    "user-engagement"     8009
+  start_agent "prenatal-followup"  "prenatal-followup"   8010
 
   echo ""
 }
@@ -177,6 +178,7 @@ health_checks() {
     "Mother-Baby Risk:8007"
     "Clinical Narrative:8008"
     "User Engagement:8009"
+    "Prenatal Follow-up:8010"
   )
 
   local all_ok=1

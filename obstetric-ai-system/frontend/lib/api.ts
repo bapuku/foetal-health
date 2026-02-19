@@ -5,6 +5,7 @@
 
 const CTG_BASE = process.env.NEXT_PUBLIC_CTG_API_URL || 'http://localhost:8000';
 const APGAR_BASE = process.env.NEXT_PUBLIC_APGAR_API_URL || 'http://localhost:8001';
+const PRENATAL_BASE = process.env.NEXT_PUBLIC_PRENATAL_API_URL || 'http://localhost:8010';
 
 export interface CTGInput {
   baseline_bpm: number;
@@ -75,6 +76,98 @@ export async function healthCTG(): Promise<{ status: string; agent: string }> {
 
 export async function healthApgar(): Promise<{ status: string; agent: string }> {
   const res = await fetch(`${APGAR_BASE}/health`);
+  if (!res.ok) throw new Error(res.statusText);
+  return res.json();
+}
+
+// --- Prenatal Follow-up Agent (port 8010) ---
+
+export async function evaluatePrenatal(dossier: Record<string, unknown>, saCourante: number): Promise<{
+  conforme_calendrier: boolean;
+  alertes: { type: string; message: string; severite: string }[];
+  examens_en_retard: string[];
+  resultats_anormaux: { examen: string; valeur: string; norme: string }[];
+  recommandations: { action: string; level: string }[];
+  narrative: string;
+}> {
+  const res = await fetch(`${PRENATAL_BASE}/api/prenatal-followup/evaluate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ dossier, sa_courante: saCourante }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error((err as { detail?: string }).detail || res.statusText);
+  }
+  return res.json();
+}
+
+export async function submitPrenatalConsultation(
+  patientId: string,
+  consultation: Record<string, unknown>,
+  biologicalExams?: Record<string, unknown>[]
+): Promise<{ ok: boolean; alertes: unknown[]; narrative: string }> {
+  const res = await fetch(`${PRENATAL_BASE}/api/prenatal-followup/consultation`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ patient_id: patientId, consultation, biological_exams: biologicalExams }),
+  });
+  if (!res.ok) throw new Error(res.statusText);
+  return res.json();
+}
+
+export async function screeningT21(risqueCombine: number, ageMaternel?: number): Promise<{
+  palier: string;
+  indication_dpni: boolean;
+  indication_caryotype: boolean;
+  message: string;
+  recommandation: string;
+}> {
+  const res = await fetch(`${PRENATAL_BASE}/api/prenatal-followup/screening/t21`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ risque_combine: risqueCombine, age_maternel: ageMaternel }),
+  });
+  if (!res.ok) throw new Error(res.statusText);
+  return res.json();
+}
+
+export async function screeningDiabetes(h0: number, h1: number, h2: number, glycemieJeun?: number, unite = 'g/L'): Promise<{
+  diagnostic_dg: boolean;
+  message: string;
+  recommandation: string;
+}> {
+  const res = await fetch(`${PRENATAL_BASE}/api/prenatal-followup/screening/diabetes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ h0, h1, h2, glycemie_jeun: glycemieJeun, unite }),
+  });
+  if (!res.ok) throw new Error(res.statusText);
+  return res.json();
+}
+
+export async function screeningGbs(saPrelevement: number, resultat: 'positif' | 'negatif', datePrelevement: string): Promise<{
+  timing_ok: boolean;
+  message: string;
+  recommandation: string;
+}> {
+  const res = await fetch(`${PRENATAL_BASE}/api/prenatal-followup/screening/gbs`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sa_prelevement: saPrelevement, resultat, date_prelevement: datePrelevement }),
+  });
+  if (!res.ok) throw new Error(res.statusText);
+  return res.json();
+}
+
+export async function getPrenatalNorms(sa: number): Promise<Record<string, unknown>> {
+  const res = await fetch(`${PRENATAL_BASE}/api/prenatal-followup/norms?sa=${sa}`);
+  if (!res.ok) throw new Error(res.statusText);
+  return res.json();
+}
+
+export async function healthPrenatal(): Promise<{ status: string; agent: string }> {
+  const res = await fetch(`${PRENATAL_BASE}/health`);
   if (!res.ok) throw new Error(res.statusText);
   return res.json();
 }

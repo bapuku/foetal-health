@@ -244,6 +244,11 @@ export default function PatientsPage() {
                   <p><span className="font-medium text-slate-600">Risque :</span> <BadgeAction variant={riskVariant}>{riskLabel}</BadgeAction></p>
                   <p><span className="font-medium text-slate-600">Statut :</span> {dossierPatient.statut === 'actif' ? 'Actif' : dossierPatient.statut === 'accouchee' ? 'Accouchee' : 'Suivi'}</p>
                   <p><span className="font-medium text-slate-600">Derniere visite :</span> {dossierPatient.derniereVisite}</p>
+                  <p className="mt-2">
+                    <Link href={`/dashboard/prenatal`} className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                      Suivi prénatal — calendrier, dépistages T21/DG/SGB
+                    </Link>
+                  </p>
                 </div>
               </section>
               <section>

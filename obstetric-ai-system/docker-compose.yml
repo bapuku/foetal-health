@@ -126,6 +126,16 @@ services:
         AGENT_PORT: "8009"
     command: uvicorn src.main:app --host 0.0.0.0 --port 8009
 
+  prenatal-followup:
+    <<: *agent-common
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+      args:
+        AGENT_DIR: agents/prenatal-followup
+        AGENT_PORT: "8010"
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8010
+
   # ── Nginx reverse proxy ──────────────────────────────
   nginx:
     image: nginx:alpine

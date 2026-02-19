@@ -156,7 +156,7 @@ sleep 15
 
 # ── 9. Health checks ──────────────────────────────────
 info "Running health checks..."
-SERVICES=("frontend:3000" "ctg-monitor:8000" "apgar-transition:8001" "symbolic-reasoning:8002" "polygraph-verifier:8003" "bishop-partogram:8004" "rciu-risk:8005" "quantum-optimizer:8006" "mother-baby-risk:8007" "clinical-narrative:8008" "user-engagement:8009")
+SERVICES=("frontend:3000" "ctg-monitor:8000" "apgar-transition:8001" "symbolic-reasoning:8002" "polygraph-verifier:8003" "bishop-partogram:8004" "rciu-risk:8005" "quantum-optimizer:8006" "mother-baby-risk:8007" "clinical-narrative:8008" "user-engagement:8009" "prenatal-followup:8010")
 ALL_OK=true
 
 for SVC in "${SERVICES[@]}"; do
@@ -184,7 +184,7 @@ echo "  URLs:"
 echo "    HTTP:     http://$VPS_HOST"
 echo "    HTTPS:    https://$VPS_HOSTNAME"
 echo ""
-echo "  Services:   12 containers (frontend + 10 agents + nginx)"
+echo "  Services:   13 containers (frontend + 11 agents + nginx)"
 echo ""
 if [ "$ALL_OK" = true ]; then
     echo -e "  Status:     ${GREEN}ALL SERVICES UP${NC}"

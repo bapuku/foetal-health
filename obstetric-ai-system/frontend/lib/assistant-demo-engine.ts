@@ -23,6 +23,7 @@ function detectIntent(text: string): string {
   if (/\b(recherche|literature|etude|pubmed|recommandation|figo|has|cngof|nice|acog)\b/.test(t)) return 'research';
   if (/\b(bonjour|hello|salut|aide|quoi faire)\b/.test(t)) return 'greeting';
   if (/\b(bishop|surveillance\s+foetale|intrapartum|travail|cesarienne|kangourou|oms|who)\b/.test(t)) return 'general';
+  if (/\b(prenatal|prénatal|consultations?\s+obligatoires|sept\s+consultations|echographie\s+t1|t21|dpni|diabete\s+gestationnel|hgpo|streptocoque\s+b|sgb|calendrier\s+grossesse|epp|entretien\s+prénatal)\b/.test(t)) return 'prenatal';
   return 'default';
 }
 
@@ -127,6 +128,19 @@ export function generateStructuredDemoResponse(
           { action: 'Exporter les références (.ris) pour la bibliographie', level: '—' },
         ],
         references: refs,
+      };
+    }
+
+    case 'prenatal': {
+      const prenatalRefs = refsFromIds(['has2016suivi', 'has2017t21', 'csp2122', 'cngofsfd2010dg', 'has2022']);
+      return {
+        summary: 'Suivi prénatal français : 7 consultations obligatoires (CSP R2122-1), EPP, 3 échographies, dépistages T21 (3 paliers HAS), DG (IADPSG), SGB. Normes biologiques par trimestre.',
+        narrative: 'En France, le suivi prénatal repose sur les articles L2122-1 et R2122-1 CSP : sept examens prénataux obligatoires (premier avant 15 SA, puis mensuels du 4e au 9e mois), l\'entretien prénatal précoce (EPP, obligatoire depuis 2020), et trois échographies recommandées (T1 datation/CN, T2 morphologique, T3 croissance). Dépistage trisomie 21 : risque combiné T1 ; trois paliers HAS 2017 (< 1/1000 surveillance standard, 1/1000-1/51 proposition DPNI, ≥ 1/50 proposition caryotype). Diabète gestationnel : critères IADPSG (HGPO 75 g), CNGOF/SFD 2010. Streptocoque B : prélèvement 34-38 SA. Sérologie toxoplasmose mensuelle si non immunisée. Références : HAS 2016 suivi, HAS 2017 T21, CSP, CNGOF/SFD 2010.',
+        recommendations: [
+          { action: 'Consulter l\'onglet Suivi prénatal pour le calendrier et les dépistages', level: 'I-A' },
+          { action: 'Vérifier la conformité du calendrier (7 consultations + EPP + 3 échos)', level: 'I-A' },
+        ],
+        references: prenatalRefs,
       };
     }
 

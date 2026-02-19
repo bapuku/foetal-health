@@ -181,6 +181,22 @@ const DEMO_RESULTS: Record<string, AgentDemoResult> = {
       { field: 'Langue', value: 'FR' },
     ],
   },
+  'Prenatal': {
+    narrative: 'Suivi prenatal francais evalue selon le calendrier CSP (7 consultations obligatoires, EPP, 3 echographies). Conformite au referentiel R2122-1/R2122-2. Dépistages T21 (3 paliers HAS), DG (IADPSG) et SGB integres. Normes biologiques adaptees au trimestre.',
+    summary: 'Calendrier conforme. Dépistages à jour.',
+    metrics: [
+      { name: 'Conformite calendrier', value: 'Conforme', threshold: 'CSP R2122-1', status: 'normal' },
+      { name: 'Consultations realisees', value: '5/7', threshold: '7 obligatoires', status: 'normal' },
+      { name: 'Echos', value: 'T1+T2 realisees', threshold: '3 recommandees', status: 'normal' },
+      { name: 'T21', value: 'Risque < 1/1000', threshold: '3 paliers HAS', status: 'normal' },
+    ],
+    references: [REF_HAS, REF_CNGOF],
+    patientData: [
+      { field: 'Patient', value: 'P-2024-0847 (demo)' },
+      { field: 'SA', value: '28 SA' },
+      { field: 'Referentiel', value: 'CSP, HAS, CNGOF' },
+    ],
+  },
 };
 
 export function generateAgentDemoResult(agentName: string): AgentDemoResult {
@@ -211,6 +227,7 @@ export function agentNameForDemo(stepAgent: string): string {
     'RCIU Risk': 'RCIU',
     'Quantum Optimizer': 'Quantum',
     'User Engagement': 'Engagement',
+    'Prenatal Follow-up': 'Prenatal',
   };
   return map[stepAgent] ?? stepAgent;
 }

@@ -27,6 +27,15 @@ const NAV_ITEMS = [
     ),
   },
   {
+    label: 'Suivi prénatal',
+    href: '/dashboard/prenatal',
+    icon: (
+      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+  },
+  {
     label: 'Patients',
     href: '/dashboard/patients',
     icon: (
@@ -121,6 +130,7 @@ const AGENTS = [
   { name: 'Mom-Baby', port: 8007, desc: 'Correlation risques mere-bebe. Analyse multi-agents.', endpoint: '/api/mother-baby-risk' },
   { name: 'Narrative', port: 8008, desc: 'Generation rapport clinique structure Harvard + triangulation.', endpoint: '/api/clinical-narrative' },
   { name: 'Engagement', port: 8009, desc: 'Communication et education patiente. Messages personnalises.', endpoint: '/api/user-engagement' },
+  { name: 'Prenatal', port: 8010, desc: 'Suivi prénatal français : 7 consultations, EPP, 3 échos, dépistages T21/DG/SGB, normes CSP.', endpoint: '/api/prenatal-followup/evaluate' },
 ];
 
 type AgentInfo = typeof AGENTS[number];
