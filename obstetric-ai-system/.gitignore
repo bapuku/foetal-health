@@ -1,0 +1,50 @@
+# Secrets - ne jamais commiter
+.env
+.env.local
+.env.*.local
+frontend/.env.local
+*.pem
+credentials.json
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Node / Next
+node_modules/
+.next/
+out/
+.npm
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs et audit local
+audit_logs/
+*.log
+scripts/rag/.cache/
+scripts/rag/.crawler-audit.log
+.pids
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+# ML
+*.pt
+*.onnx
+*.mar

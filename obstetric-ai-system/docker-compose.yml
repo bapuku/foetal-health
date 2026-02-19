@@ -1,0 +1,144 @@
+x-agent-common: &agent-common
+  build:
+    context: .
+    dockerfile: Dockerfile.agent
+  restart: unless-stopped
+  env_file: .env
+  networks:
+    - obstetric
+
+services:
+  # ── Frontend ──────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - NEXT_PUBLIC_CTG_API_URL=http://ctg-monitor:8000
+      - NEXT_PUBLIC_APGAR_API_URL=http://apgar-transition:8001
+    depends_on:
+      - ctg-monitor
+      - apgar-transition
+    networks:
+      - obstetric
+
+  # ── Agents (10 microservices) ─────────────────────────
+  ctg-monitor:
+    <<: *agent-common
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+      args:
+        AGENT_DIR: agents/ctg_monitor
+        AGENT_PORT: "8000"
+    environment:
+      - AGENT_PORT=8000
+
+  apgar-transition:
+    <<: *agent-common
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+      args:
+        AGENT_DIR: agents/apgar-transition
+        AGENT_PORT: "8001"
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8001
+
+  symbolic-reasoning:
+    <<: *agent-common
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+      args:
+        AGENT_DIR: agents/symbolic-reasoning
+        AGENT_PORT: "8002"
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8002
+
+  polygraph-verifier:
+    <<: *agent-common
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+      args:
+        AGENT_DIR: agents/polygraph-verifier
+        AGENT_PORT: "8003"
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8003
+
+  bishop-partogram:
+    <<: *agent-common
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+      args:
+        AGENT_DIR: agents/bishop-partogram
+        AGENT_PORT: "8004"
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8004
+
+  rciu-risk:
+    <<: *agent-common
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+      args:
+        AGENT_DIR: agents/rciu-risk
+        AGENT_PORT: "8005"
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8005
+
+  quantum-optimizer:
+    <<: *agent-common
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+      args:
+        AGENT_DIR: agents/quantum-optimizer
+        AGENT_PORT: "8006"
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8006
+
+  mother-baby-risk:
+    <<: *agent-common
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+      args:
+        AGENT_DIR: agents/mother-baby-risk
+        AGENT_PORT: "8007"
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8007
+
+  clinical-narrative:
+    <<: *agent-common
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+      args:
+        AGENT_DIR: agents/clinical-narrative
+        AGENT_PORT: "8008"
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8008
+
+  user-engagement:
+    <<: *agent-common
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+      args:
+        AGENT_DIR: agents/user-engagement
+        AGENT_PORT: "8009"
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8009
+
+  # ── Nginx reverse proxy ──────────────────────────────
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "8090:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - frontend
+    networks:
+      - obstetric
+
+networks:
+  obstetric:
+    driver: bridge

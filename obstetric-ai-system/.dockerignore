@@ -1,0 +1,16 @@
+.venv
+.git
+.env
+.env.local
+frontend/.env.local
+frontend/node_modules
+frontend/.next
+__pycache__
+*.pyc
+.DS_Store
+audit_logs
+.terraform
+*.tfstate*
+*.pt
+*.onnx
+*.mar

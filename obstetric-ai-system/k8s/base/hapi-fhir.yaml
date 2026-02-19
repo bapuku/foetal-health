@@ -1,0 +1,83 @@
+# HAPI FHIR R4 Server - Backend for FHIR resources
+# Uses PostgreSQL as backend (configure datasource to postgresql.obs-prod.svc)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hapi-fhir
+  namespace: obs-fhir
+  labels:
+    app: hapi-fhir
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hapi-fhir
+  template:
+    metadata:
+      labels:
+        app: hapi-fhir
+    spec:
+      containers:
+        - name: hapi-fhir
+          image: hapiproject/hapi:v7.0.0
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://postgresql.obs-prod.svc.cluster.local:5432/obstetric_ai"
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: fhir-db-credentials
+                  key: username
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: fhir-db-credentials
+                  key: password
+            - name: HAPI_FHIR_FHIR_VERSION
+              value: "R4"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /fhir/metadata
+              port: 8080
+            initialDelaySeconds: 90
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /fhir/metadata
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hapi-fhir
+  namespace: obs-fhir
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+  selector:
+    app: hapi-fhir
+---
+# FHIR server DB credentials (mirror or ESO sync from obs-prod postgresql-credentials)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: fhir-db-credentials
+  namespace: obs-fhir
+type: Opaque
+stringData:
+  username: postgres
+  password: change-me-use-external-secrets

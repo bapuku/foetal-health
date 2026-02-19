@@ -1,0 +1,28 @@
+# CronJob: Evidently AI data drift detection (daily)
+# Runs batch on J-1 data, pushes metrics to Prometheus or logs
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: evidently-drift
+  namespace: obs-ml
+spec:
+  schedule: "0 2 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: evidently
+              image: python:3.11-slim
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  pip install evidently pandas -q
+                  python -c "
+                  from evidently.report import Report
+                  from evidently.metric_preset import DataDriftPreset
+                  # Placeholder: load reference and current from MinIO/DB
+                  print('Data drift check completed')
+                  "

@@ -1,0 +1,67 @@
+# TorchServe deployment for CTG Classifier model
+# Build: torch-model-archiver --model-name ctg --version 1.0 --model-file ml/models/ctg_classifier.py --serialized-file ctg_classifier.pt --handler path/to/handler.py
+# Then deploy the .mar to this deployment.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: torchserve-ctg
+  namespace: obs-ml
+  labels:
+    app: torchserve-ctg
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: torchserve-ctg
+  template:
+    metadata:
+      labels:
+        app: torchserve-ctg
+    spec:
+      containers:
+        - name: torchserve
+          image: pytorch/torchserve:0.8.2-cpu
+          args:
+            - "torchserve"
+            - "--start"
+            - "--model-store"
+            - "/home/model-server/model-store"
+            - "--models"
+            - "ctg=ctg.mar"
+          ports:
+            - containerPort: 8080
+              name: inference
+            - containerPort: 8081
+              name: management
+          volumeMounts:
+            - name: model-store
+              mountPath: /home/model-server/model-store
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 20
+      volumes:
+        - name: model-store
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: torchserve-ctg
+  namespace: obs-ml
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: inference
+  selector:
+    app: torchserve-ctg

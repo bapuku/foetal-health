@@ -1,0 +1,114 @@
+# NATS JetStream - message bus for event-driven agents
+# Streams: ctg-events, clinical-events, audit-events
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nats
+  namespace: obs-prod
+  labels:
+    app: nats
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nats
+  template:
+    metadata:
+      labels:
+        app: nats
+    spec:
+      containers:
+        - name: nats
+          image: nats:2.10-alpine
+          args:
+            - "--jetstream"
+            - "--store_dir=/data"
+            - "-m"
+            - "8222"
+          ports:
+            - containerPort: 4222
+              name: client
+            - containerPort: 8222
+              name: monitor
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8222
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8222
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: nats-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nats-data
+  namespace: obs-prod
+spec:
+  storageClassName: csi-cinder-high-speed-gen2-luks
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nats
+  namespace: obs-prod
+spec:
+  ports:
+    - port: 4222
+      targetPort: 4222
+      name: client
+    - port: 8222
+      targetPort: 8222
+      name: monitor
+  selector:
+    app: nats
+---
+# NATS ConfigMap for JetStream streams (applied via nats-box or init)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nats-streams-config
+  namespace: obs-prod
+data:
+  streams.conf: |
+    stream ctg_events {
+      subjects = ["ctg.>"]
+      storage = file
+      retention = limits
+      max_age = 24h
+      max_bytes = 1GB
+    }
+    stream clinical_events {
+      subjects = ["clinical.>"]
+      storage = file
+      retention = limits
+      max_age = 168h
+    }
+    stream audit_events {
+      subjects = ["audit.>"]
+      storage = file
+      retention = limits
+      max_age = 87600h
+    }

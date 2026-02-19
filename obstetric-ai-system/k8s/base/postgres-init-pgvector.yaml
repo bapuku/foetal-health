@@ -1,0 +1,14 @@
+# Init script for PostgreSQL: enable pgvector for embeddings
+# Use as init container or run once via Job
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-scripts
+  namespace: obs-prod
+data:
+  init-pgvector.sh: |
+    #!/bin/sh
+    set -e
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+      CREATE EXTENSION IF NOT EXISTS vector;
+    EOSQL

@@ -1,0 +1,17 @@
+# StorageClass for encrypted NVMe (OVH csi-cinder-high-speed-gen2-luks)
+# Use this for PostgreSQL, Redis, and other PHI data
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: csi-cinder-high-speed-gen2-luks
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "false"
+provisioner: cinder.csi.openstack.org
+parameters:
+  type: cinder-high-speed-gen2
+  csi.storage.k8s.io/fstype: ext4
+  # LUKS encryption (when available on OVH)
+  # encryption: "true"
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+reclaimPolicy: Retain

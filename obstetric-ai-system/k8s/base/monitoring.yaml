@@ -1,0 +1,42 @@
+# Prometheus ServiceMonitor and Alertmanager config (requires kube-prometheus-stack)
+# Deploy: helm install kube-prometheus-stack prometheus-community/kube-prometheus-stack -n monitoring
+apiVersion: v1
+kind: Service
+metadata:
+  name: ctg-monitor-metrics
+  namespace: obs-prod
+  labels:
+    app: ctg-monitor
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8000"
+    prometheus.io/path: "/metrics"
+spec:
+  ports:
+    - port: 8000
+      name: http
+  selector:
+    app: ctg-monitor
+---
+# Example PrometheusRule for obstetric alerts
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: obstetric-alerts
+  namespace: obs-prod
+spec:
+  groups:
+    - name: obstetric.rules
+      rules:
+        - alert: CTGPathologicalUnvalidated
+          expr: obstetric_ctg_pathological_pending_seconds > 120
+          for: 2m
+          labels: { severity: critical }
+          annotations:
+            summary: "CTG pathologique non validé > 2 min"
+        - alert: ApgarLowUnescalated
+          expr: obstetric_apgar_low_pending_seconds > 60
+          for: 1m
+          labels: { severity: critical }
+          annotations:
+            summary: "Apgar ≤6 non escaladé > 1 min"

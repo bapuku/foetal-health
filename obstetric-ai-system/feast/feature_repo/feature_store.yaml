@@ -1,0 +1,12 @@
+project: obstetric_ai
+registry: s3://feast-registry/obstetric_ai
+provider: local
+online_store:
+  type: redis
+  connection_string: "redis:6379"
+offline_store:
+  type: postgres
+  host: postgresql.obs-prod.svc.cluster.local
+  port: 5432
+  database: obstetric_ai
+  db_schema: feast

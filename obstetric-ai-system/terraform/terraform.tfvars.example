@@ -1,0 +1,10 @@
+# Copy to terraform.tfvars and fill with your OVH credentials (do not commit terraform.tfvars)
+
+ovh_endpoint = "ovh-eu"
+project_id   = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+# ovh_application_key, ovh_application_secret, ovh_consumer_key: set via env or TF_VAR_*
+
+cluster_name = "obstetric-ai"
+region       = "GRA"
+environment  = "production"
+vrack_id     = ""

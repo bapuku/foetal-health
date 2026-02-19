@@ -1,0 +1,102 @@
+[
+  {
+    "id": "figo2015-1",
+    "source": "FIGO",
+    "source_id": "figo2015",
+    "title": "FIGO consensus guidelines on intrapartum fetal monitoring.",
+    "authors": "FIGO Intrapartum Fetal Monitoring",
+    "year": 2015,
+    "chunk_text": "Classification FIGO 2015 du trace cardiotocographique : Normal (FHR baseline 110-160 bpm, variabilite 5-25 bpm, accelerations presentes, decelerations absentes ou precoces legères), Suspect (un parametre en dehors du normal), Pathologique (FHR <110 ou >160, variabilite <5, decelerations tardives ou prolongees). En cas de trace pathologique, validation humaine HITL et escalade clinique.",
+    "metadata": { "type": "guideline" }
+  },
+  {
+    "id": "has2022-1",
+    "source": "HAS",
+    "source_id": "has2022",
+    "title": "Surveillance foetale pendant le travail.",
+    "authors": "HAS",
+    "year": 2022,
+    "chunk_text": "Recommandations HAS 2022 : surveillance foetale continue en travail par cardiotocographie. Interpretation selon FIGO 2015. Documenter le consentement et les modalites de surveillance. En cas de trace suspect ou pathologique, relecture par un second clinicien et decision d'escalade (HITL) selon protocole.",
+    "metadata": { "type": "guideline" }
+  },
+  {
+    "id": "cngof2021-1",
+    "source": "CNGOF",
+    "source_id": "cngof2021",
+    "title": "Recommendations pour la pratique clinique : accouchement.",
+    "authors": "CNGOF",
+    "year": 2021,
+    "chunk_text": "CNGOF 2021 : accouchement voie basse, indication de cesarienne, gestion de la deuxieme phase du travail. Score de Bishop pour maturation cervicale. Surveillance du bien-etre foetal en travail selon HAS et FIGO. Plan de naissance et information de la patiente.",
+    "metadata": { "type": "guideline" }
+  },
+  {
+    "id": "who2018-1",
+    "source": "WHO",
+    "source_id": "who2018",
+    "title": "WHO recommendations: intrapartum care for a positive childbirth experience.",
+    "authors": "WHO",
+    "year": 2018,
+    "chunk_text": "OMS 2018 : soins intrapartum pour une experience positive. Reduction de la mortalite maternelle et neonatale. Companion pendant le travail, liberte de mouvement, soulagement de la douleur, surveillance foetale appropriee. Respect des droits et preferences des femmes.",
+    "metadata": { "type": "guideline" }
+  },
+  {
+    "id": "nice2014-1",
+    "source": "NICE",
+    "source_id": "nice2014",
+    "title": "Intrapartum care for healthy women and babies.",
+    "authors": "NICE",
+    "year": 2014,
+    "chunk_text": "NICE CG190 : prise en charge intrapartum des femmes en bonne sante. Monitoring continu du rythme cardiaque foetal en cas de risque. Interpretation du CTG selon protocoles nationaux. Apgar a 1 et 5 minutes. Clampage tardif du cordon recommande.",
+    "metadata": { "type": "guideline" }
+  },
+  {
+    "id": "acog2009-1",
+    "source": "ACOG",
+    "source_id": "acog2009",
+    "title": "ACOG Practice Bulletin No. 106: Intrapartum fetal heart rate monitoring.",
+    "authors": "ACOG",
+    "year": 2009,
+    "chunk_text": "ACOG 106 : monitoring de la frequence cardiaque foetale en travail. Categories de tracés (I, II, III). Prise en charge selon la categorie. Communication avec la patiente et documentation. Indications de surveillance continue vs intermittente.",
+    "metadata": { "type": "guideline" }
+  },
+  {
+    "id": "cochrane2017-1",
+    "source": "Cochrane",
+    "source_id": "cochrane2017ctg",
+    "title": "Continuous cardiotocography (CTG) as a form of electronic fetal monitoring.",
+    "authors": "Alfirevic Z, Devane D, Gyte GML",
+    "year": 2017,
+    "chunk_text": "Cochrane Review : le monitoring continu par CTG versus auscultation intermittente en travail. Reduction du risque de convulsions neonatales associee au CTG continu ; augmentation du taux de cesarienne et d'accouchement instrumental. Bilan benefice-risque a individualiser.",
+    "metadata": { "type": "journal" }
+  },
+  {
+    "id": "acog2020apgar-1",
+    "source": "ACOG",
+    "source_id": "acog2020apgar",
+    "title": "Committee Opinion No. 804: Apgar score.",
+    "authors": "ACOG",
+    "year": 2020,
+    "chunk_text": "ACOG 804 : score d'Apgar a 1 et 5 minutes. Cinq composantes : couleur, tonus, reflexe, activite, respiration. Chaque item 0-2. Apgar 7-10 normal ; 4-6 necessite surveillance/reanimation ; 0-3 detresse. Ne pas utiliser l'Apgar seul pour pronostic long terme.",
+    "metadata": { "type": "guideline" }
+  },
+  {
+    "id": "rciu-cngof-1",
+    "source": "CNGOF",
+    "source_id": "cngof2019rciu",
+    "title": "Recommendations retard de croissance intra-uterin.",
+    "authors": "CNGOF",
+    "year": 2019,
+    "chunk_text": "RCIU : diagnostic par biometrie foetale et Doppler ombilical. Surveillance rapprochee, terme d'accouchement selon contexte. Risque de morbidite neonatale et long terme. Doppler cerebral et ductus venosus dans les formes severes.",
+    "metadata": { "type": "guideline" }
+  },
+  {
+    "id": "oms2014kangourou-1",
+    "source": "OMS",
+    "source_id": "oms2014kangourou",
+    "title": "Methode Kangourou : guide pratique.",
+    "authors": "OMS",
+    "year": 2014,
+    "chunk_text": "Methode Kangourou (peau a peau) : recommandee pour les nouveau-nes, en particulier prematures et faible poids. Ameliore la thermoregulation, l'allaitement et le lien. Recommandation OMS pour les soins neonataux essentiels.",
+    "metadata": { "type": "guideline" }
+  }
+]

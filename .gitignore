@@ -1,0 +1,53 @@
+# Secrets
+.env
+.env.local
+.env.*.local
+**/.env
+**/.env.local
+**/.env.*.local
+*.pem
+credentials.json
+
+# Node
+node_modules/
+.next/
+out/
+.npm
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+audit_logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Crawler cache
+scripts/rag/.cache/
+scripts/rag/.crawler-audit.log
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+# ML
+*.pt
+*.onnx
+*.mar

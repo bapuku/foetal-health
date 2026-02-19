@@ -1,0 +1,10 @@
+{
+  "name": "obstetric-ai-system",
+  "private": true,
+  "scripts": {
+    "build": "cd frontend && npm run build",
+    "release": "./release.sh",
+    "release:no-deploy": "./release.sh --no-deploy",
+    "release:no-push": "./release.sh --no-push"
+  }
+}
