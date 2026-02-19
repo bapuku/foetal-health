@@ -15,9 +15,6 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     env_file: .env
-    environment:
-      - NEXT_PUBLIC_CTG_API_URL=http://ctg-monitor:8000
-      - NEXT_PUBLIC_APGAR_API_URL=http://apgar-transition:8001
     depends_on:
       - ctg-monitor
       - apgar-transition

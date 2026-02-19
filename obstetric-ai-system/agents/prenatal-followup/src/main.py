@@ -366,6 +366,7 @@ def generate_report(body: PrenatalReportInput) -> dict[str, Any]:
     return report
 
 
+@app.get("/api/prenatal-followup/health")
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "agent": "prenatal-followup"}

@@ -77,6 +77,7 @@ def apgar_transition(input_data: ApgarInput) -> ApgarOutput:
     }
     return ApgarOutput(risk_apgar_low=risk_apgar_low, narrative=narrative, hitl_required=hitl_required, fhir_observation=fhir)
 
+@app.get("/api/apgar-transition/health")
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok", "agent": "apgar-transition"}

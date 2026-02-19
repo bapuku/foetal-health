@@ -114,6 +114,7 @@ def ctg_monitor(input_data: CTGInput) -> CTGOutput:
         fhir_observation=fhir,
     )
 
+@app.get("/api/ctg-monitor/health")
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok", "agent": "ctg-monitor"}

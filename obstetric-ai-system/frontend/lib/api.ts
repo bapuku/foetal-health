@@ -3,9 +3,9 @@
  * Les URLs sont lues depuis NEXT_PUBLIC_* (configurées via .env / setup-credentials.sh).
  */
 
-const CTG_BASE = process.env.NEXT_PUBLIC_CTG_API_URL || 'http://localhost:8000';
-const APGAR_BASE = process.env.NEXT_PUBLIC_APGAR_API_URL || 'http://localhost:8001';
-const PRENATAL_BASE = process.env.NEXT_PUBLIC_PRENATAL_API_URL || 'http://localhost:8010';
+const CTG_BASE = process.env.NEXT_PUBLIC_CTG_API_URL || '';
+const APGAR_BASE = process.env.NEXT_PUBLIC_APGAR_API_URL || '';
+const PRENATAL_BASE = process.env.NEXT_PUBLIC_PRENATAL_API_URL || '';
 
 export interface CTGInput {
   baseline_bpm: number;
@@ -69,13 +69,13 @@ export async function evaluateApgar(data: ApgarInput): Promise<ApgarOutput> {
 }
 
 export async function healthCTG(): Promise<{ status: string; agent: string }> {
-  const res = await fetch(`${CTG_BASE}/health`);
+  const res = await fetch(`${CTG_BASE}/api/ctg-monitor/health`);
   if (!res.ok) throw new Error(res.statusText);
   return res.json();
 }
 
 export async function healthApgar(): Promise<{ status: string; agent: string }> {
-  const res = await fetch(`${APGAR_BASE}/health`);
+  const res = await fetch(`${APGAR_BASE}/api/apgar/health`);
   if (!res.ok) throw new Error(res.statusText);
   return res.json();
 }
@@ -205,7 +205,7 @@ export async function generatePrenatalReport(params: PrenatalReportInput): Promi
 }
 
 export async function healthPrenatal(): Promise<{ status: string; agent: string }> {
-  const res = await fetch(`${PRENATAL_BASE}/health`);
+  const res = await fetch(`${PRENATAL_BASE}/api/prenatal-followup/health`);
   if (!res.ok) throw new Error(res.statusText);
   return res.json();
 }
