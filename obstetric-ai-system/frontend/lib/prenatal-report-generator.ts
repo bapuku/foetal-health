@@ -32,10 +32,10 @@ export interface PrenatalReportData {
 }
 
 const PRENATAL_REFERENCES: HarvardCitation[] = [
-  { id: 'has2016', authors: 'HAS', year: 2016, title: 'Suivi des femmes enceintes', url: 'https://www.has-sante.fr' },
-  { id: 'has2017', authors: 'HAS', year: 2017, title: 'Dépistage de la trisomie 21', url: 'https://www.has-sante.fr' },
-  { id: 'csp', authors: 'CSP', year: 2022, title: 'Articles R2122-1 et R2122-2', url: '' },
-  { id: 'cngof2010', authors: 'CNGOF/SFD', year: 2010, title: 'Diabète gestationnel (IADPSG)', url: '' },
+  { id: 'has2016', authors: 'HAS', year: 2016, title: 'Suivi des femmes enceintes', url: 'https://www.has-sante.fr', type: 'guideline' },
+  { id: 'has2017', authors: 'HAS', year: 2017, title: 'Dépistage de la trisomie 21', url: 'https://www.has-sante.fr', type: 'guideline' },
+  { id: 'csp', authors: 'CSP', year: 2022, title: 'Articles R2122-1 et R2122-2', url: '', type: 'guideline' },
+  { id: 'cngof2010', authors: 'CNGOF/SFD', year: 2010, title: 'Diabète gestationnel (IADPSG)', url: '', type: 'guideline' },
 ];
 
 export function generatePrenatalReport(
