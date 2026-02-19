@@ -91,6 +91,11 @@ def evaluate_gbs_screening(sa_prelevement: float, resultat: str) -> dict[str, An
         "resultat": resultat,
         "portage": positif,
         "antibioprophylaxie_prevue": positif,
-        "message": f"Prélèvement à {sa_prelevement} SA (fenêtre 34-38 SA : {'conforme' if timing_ok else 'hors fenêtre'}). SGB {'positif' if positif else 'négatif'} → {'antibiothérapie per-partum recommandée.' if positif else 'pas d\'antibiothérapie systématique.'}",
+        "message": (
+            f"Prélèvement à {sa_prelevement} SA "
+            f"(fenêtre 34-38 SA : {'conforme' if timing_ok else 'hors fenêtre'}). "
+            f"SGB {'positif' if positif else 'négatif'} → "
+            + ("antibiothérapie per-partum recommandée." if positif else "pas d'antibiothérapie systématique.")
+        ),
         "recommandation": "Antibiothérapie per-partum (pénicilline G ou amoxicilline) si SGB positif, selon protocole local." if positif else "Pas d'antibiothérapie préventive.",
     }
