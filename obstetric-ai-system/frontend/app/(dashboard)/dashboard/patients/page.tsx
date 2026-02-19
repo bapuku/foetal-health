@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import BadgeAction from '@/components/ui/BadgeAction';
 import ActionModal from '@/components/ui/ActionModal';
@@ -16,6 +16,12 @@ interface Patient {
   derniereVisite: string;
   statut: 'actif' | 'accouchee' | 'suivi';
 }
+
+const DEMO_PATIENTS_FALLBACK: Patient[] = [
+  { id: 'P-2024-0847', nom: 'Martin', prenom: 'Sophie', age: 31, sa: 38, risque: 'bas', derniereVisite: '18/02/2026', statut: 'actif' },
+  { id: 'P-2024-0845', nom: 'Dubois', prenom: 'Marie', age: 28, sa: 36, risque: 'moyen', derniereVisite: '17/02/2026', statut: 'actif' },
+  { id: 'P-2024-0841', nom: 'Petit', prenom: 'Isabelle', age: 29, sa: 34, risque: 'eleve', derniereVisite: '16/02/2026', statut: 'actif' },
+];
 
 interface Consultation {
   date: string;
@@ -54,24 +60,66 @@ function getDossierDemo(patient: Patient): {
   return { consultations, analyses, recommandations };
 }
 
-const MOCK_PATIENTS: Patient[] = [
-  { id: 'P-2024-0847', nom: 'Martin', prenom: 'Sophie', age: 31, sa: 38, risque: 'bas', derniereVisite: '18/02/2026', statut: 'actif' },
-  { id: 'P-2024-0845', nom: 'Dubois', prenom: 'Marie', age: 28, sa: 36, risque: 'moyen', derniereVisite: '17/02/2026', statut: 'actif' },
-  { id: 'P-2024-0843', nom: 'Bernard', prenom: 'Claire', age: 35, sa: 40, risque: 'bas', derniereVisite: '17/02/2026', statut: 'actif' },
-  { id: 'P-2024-0841', nom: 'Petit', prenom: 'Isabelle', age: 29, sa: 34, risque: 'eleve', derniereVisite: '16/02/2026', statut: 'actif' },
-  { id: 'P-2024-0839', nom: 'Robert', prenom: 'Amelie', age: 32, sa: 37, risque: 'moyen', derniereVisite: '16/02/2026', statut: 'actif' },
-  { id: 'P-2024-0837', nom: 'Richard', prenom: 'Julie', age: 27, sa: 39, risque: 'bas', derniereVisite: '15/02/2026', statut: 'actif' },
-  { id: 'P-2024-0835', nom: 'Moreau', prenom: 'Camille', age: 34, sa: 41, risque: 'eleve', derniereVisite: '15/02/2026', statut: 'suivi' },
-  { id: 'P-2024-0831', nom: 'Leroy', prenom: 'Emma', age: 26, sa: 32, risque: 'eleve', derniereVisite: '14/02/2026', statut: 'actif' },
-  { id: 'P-2024-0312', nom: 'Simon', prenom: 'Laura', age: 30, sa: 40, risque: 'bas', derniereVisite: '18/02/2026', statut: 'accouchee' },
-  { id: 'P-2024-0308', nom: 'Laurent', prenom: 'Chloe', age: 33, sa: 39, risque: 'moyen', derniereVisite: '13/02/2026', statut: 'accouchee' },
-];
-
 export default function PatientsPage() {
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'tous' | 'actif' | 'eleve'>('tous');
   const [riskModalPatient, setRiskModalPatient] = useState<Patient | null>(null);
   const [dossierPatient, setDossierPatient] = useState<Patient | null>(null);
+  const [newPatientOpen, setNewPatientOpen] = useState(false);
+  const [newPatientForm, setNewPatientForm] = useState({ nom: '', prenom: '', age: 28, sa: 12, risque: 'bas' as Patient['risque'], statut: 'actif' as Patient['statut'] });
+  const [savingNew, setSavingNew] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch('/api/patients')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((list: Patient[]) => setPatients(Array.isArray(list) ? list : []))
+      .catch(() => setPatients(DEMO_PATIENTS_FALLBACK))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const refetchPatients = () => {
+    fetch('/api/patients')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((list: Patient[]) => setPatients(Array.isArray(list) ? list : patients))
+      .catch(() => {});
+  };
+
+  const handleCreatePatient = async () => {
+    if (!newPatientForm.nom.trim() || !newPatientForm.prenom.trim()) {
+      setSaveError('Nom et prénom requis.');
+      return;
+    }
+    setSavingNew(true);
+    setSaveError(null);
+    try {
+      const res = await fetch('/api/patients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nom: newPatientForm.nom.trim(),
+          prenom: newPatientForm.prenom.trim(),
+          age: newPatientForm.age,
+          sa: newPatientForm.sa,
+          risque: newPatientForm.risque,
+          statut: newPatientForm.statut,
+          derniereVisite: new Date().toISOString().slice(0, 10),
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setSaveError((data.error as string) || res.statusText);
+        return;
+      }
+      setNewPatientOpen(false);
+      setNewPatientForm({ nom: '', prenom: '', age: 28, sa: 12, risque: 'bas', statut: 'actif' });
+      refetchPatients();
+    } finally {
+      setSavingNew(false);
+    }
+  };
 
   const riskBadge = (r: Patient['risque'], p: Patient) => {
     const variant = r === 'bas' ? 'ok' : r === 'moyen' ? 'warn' : 'danger';
@@ -89,7 +137,7 @@ export default function PatientsPage() {
     return <span className="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-800">Suivi</span>;
   };
 
-  const filtered = MOCK_PATIENTS.filter((p) => {
+  const filtered = patients.filter((p) => {
     const matchSearch =
       search === '' ||
       `${p.nom} ${p.prenom} ${p.id}`.toLowerCase().includes(search.toLowerCase());
@@ -107,9 +155,9 @@ export default function PatientsPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold text-slate-900">Dossiers patients</h1>
-          <p className="text-sm text-slate-500">{MOCK_PATIENTS.length} patientes enregistrees (donnees de demonstration)</p>
+          <p className="text-sm text-slate-500">{loading ? 'Chargement…' : `${patients.length} patiente(s) enregistrée(s)`}</p>
         </div>
-        <button className="btn-primary flex items-center gap-2">
+        <button type="button" onClick={() => { setNewPatientOpen(true); setSaveError(null); }} className="btn-primary flex items-center gap-2">
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
           </svg>
@@ -197,6 +245,62 @@ export default function PatientsPage() {
           </table>
         </div>
       </div>
+
+      {/* Modal Nouvelle patiente */}
+      <ActionModal
+        isOpen={newPatientOpen}
+        onClose={() => setNewPatientOpen(false)}
+        title="Nouvelle patiente"
+        size="md"
+        actions={
+          <div className="flex gap-2">
+            <button type="button" onClick={handleCreatePatient} disabled={savingNew} className="btn-primary">
+              {savingNew ? 'Création…' : 'Créer'}
+            </button>
+            <button type="button" onClick={() => setNewPatientOpen(false)} className="btn-secondary">Annuler</button>
+          </div>
+        }
+      >
+        <div className="space-y-3 text-sm">
+          {saveError && <p className="text-red-600">{saveError}</p>}
+          <div>
+            <label className="mb-1 block font-medium text-slate-600">Nom</label>
+            <input type="text" value={newPatientForm.nom} onChange={(e) => setNewPatientForm((f) => ({ ...f, nom: e.target.value }))} className="input-field w-full" placeholder="Nom" />
+          </div>
+          <div>
+            <label className="mb-1 block font-medium text-slate-600">Prénom</label>
+            <input type="text" value={newPatientForm.prenom} onChange={(e) => setNewPatientForm((f) => ({ ...f, prenom: e.target.value }))} className="input-field w-full" placeholder="Prénom" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block font-medium text-slate-600">Âge</label>
+              <input type="number" min={1} max={60} value={newPatientForm.age} onChange={(e) => setNewPatientForm((f) => ({ ...f, age: Number(e.target.value) || 0 }))} className="input-field w-full" />
+            </div>
+            <div>
+              <label className="mb-1 block font-medium text-slate-600">SA</label>
+              <input type="number" min={0} max={42} value={newPatientForm.sa} onChange={(e) => setNewPatientForm((f) => ({ ...f, sa: Number(e.target.value) || 0 }))} className="input-field w-full" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block font-medium text-slate-600">Risque</label>
+              <select value={newPatientForm.risque} onChange={(e) => setNewPatientForm((f) => ({ ...f, risque: e.target.value as Patient['risque'] }))} className="input-field w-full">
+                <option value="bas">Bas</option>
+                <option value="moyen">Moyen</option>
+                <option value="eleve">Élevé</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block font-medium text-slate-600">Statut</label>
+              <select value={newPatientForm.statut} onChange={(e) => setNewPatientForm((f) => ({ ...f, statut: e.target.value as Patient['statut'] }))} className="input-field w-full">
+                <option value="actif">Actif</option>
+                <option value="accouchee">Accouchée</option>
+                <option value="suivi">Suivi</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </ActionModal>
 
       <ActionModal
         isOpen={!!riskModalPatient}

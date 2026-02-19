@@ -86,7 +86,12 @@ export default function ToolsPage() {
       <PageBanner src="/images/ultrasound-probe.png" alt="Échographie" title="Registre des outils" subtitle="Outils médicaux, IA, FHIR et audit disponibles dans le système" />
       <div>
         <h1 className="text-xl font-bold text-slate-900">Registre des outils</h1>
-        <p className="text-sm text-slate-500">Outils medicaux, IA, FHIR et audit disponibles dans le systeme.</p>
+        <p className="text-sm text-slate-500">Outils medicaux, IA, FHIR et audit disponibles dans le systeme. Activer/désactiver pour enregistrer votre préférence (local).</p>
+      </div>
+
+      <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
+        <p className="font-medium text-slate-700">Utilisation dans les workflows</p>
+        <p className="mt-1">Prenatal Calendar, Screening T21, HGPO Calculator, GBS Screening : agent Prenatal Follow-up (port 8010). Bishop, RCIU, Apgar : agents Bishop Partogram, RCIU Risk, Apgar Transition. CTG CNN : agent CTG Monitor. Client FHIR et Patient Search utilisent la connexion FHIR configurée en Admin.</p>
       </div>
 
       <div className="flex flex-wrap items-center gap-4">

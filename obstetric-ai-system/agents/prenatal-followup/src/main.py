@@ -65,8 +65,26 @@ def _log_audit(action: str, input_hash: str, output_hash: str, model_version: Op
     return entry.get("hash")
 
 
+def _fetch_alert_config() -> Optional[dict]:
+    """Fetch alert config from frontend API (ALERT_CONFIG_URL). Returns None on failure."""
+    url = os.getenv("ALERT_CONFIG_URL", "").strip()
+    if not url:
+        return None
+    base = url.rstrip("/")
+    if not base.startswith("http"):
+        return None
+    try:
+        import urllib.request
+        req = urllib.request.Request(f"{base}/api/admin/alert-config", method="GET")
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            return json.loads(resp.read().decode())
+    except Exception:
+        return None
+
+
 def _dispatch_emergency_alert(alert: Any, patient_info: dict) -> None:
-    """Send SMS, WhatsApp and Email to medical team for critical obstetric alerts."""
+    """Send SMS, WhatsApp, Email and Slack to medical team for critical obstetric alerts.
+    Uses ALERT_CONFIG_URL (GET /api/admin/alert-config) when set; else falls back to env vars."""
     if not _alerting_available:
         return
     severite = alert.severite if hasattr(alert, "severite") else (alert.get("severite") or "critical")
@@ -78,6 +96,44 @@ def _dispatch_emergency_alert(alert: Any, patient_info: dict) -> None:
     sa = patient_info.get("sa") or patient_info.get("sa_courante") or "?"
     body = f"[URGENCE OBSTETRICALE] Patient {patient_id} - {alert_type} - SA {sa} - {msg}"
     subject = f"[URGENCE] Suivi prénatal - Patient {patient_id} - {alert_type}"
+
+    config = _fetch_alert_config()
+    if config:
+        # Use admin config: recipients (type critical) and channel toggles
+        recipients = config.get("recipients") or []
+        critical_recipients = [r for r in recipients if (r.get("type") or "").lower() == "critical"]
+        email_enabled = config.get("email") and config["email"].get("enabled")
+        sms_enabled = config.get("sms") and config["sms"].get("enabled")
+        wa_enabled = config.get("whatsapp") and config["whatsapp"].get("enabled")
+        slack_cfg = config.get("slack") or {}
+        slack_enabled = slack_cfg.get("enabled") and (slack_cfg.get("webhookUrl") or "").strip().startswith("https://")
+
+        for r in critical_recipients:
+            if email_enabled and r.get("email"):
+                try:
+                    alert_sender.send_email(r["email"].strip(), subject, body)
+                except Exception:
+                    pass
+            if (sms_enabled or wa_enabled) and r.get("phone"):
+                to = (r["phone"] or "").strip()
+                if sms_enabled:
+                    try:
+                        alert_sender.send_sms(to, body)
+                    except Exception:
+                        pass
+                if wa_enabled:
+                    try:
+                        alert_sender.send_whatsapp(to, body)
+                    except Exception:
+                        pass
+        if slack_enabled:
+            try:
+                alert_sender.send_slack(slack_cfg["webhookUrl"].strip(), body)
+            except Exception:
+                pass
+        return
+
+    # Fallback: env vars
     phones = []
     if os.getenv("ALERT_SAGE_FEMME_PHONE"):
         phones.append(os.getenv("ALERT_SAGE_FEMME_PHONE"))

@@ -14,7 +14,14 @@ import {
 import type { PrenatalReportOutput } from '@/lib/api';
 import type { PrenatalConsultation } from '@/lib/prenatal-types';
 
-const MOCK_PATIENTS = [
+interface PatientOption {
+  id: string;
+  nom: string;
+  prenom: string;
+  sa: number;
+}
+
+const DEMO_PATIENTS: PatientOption[] = [
   { id: 'P-2024-0847', nom: 'Martin', prenom: 'Sophie', sa: 28 },
   { id: 'P-2024-0845', nom: 'Dubois', prenom: 'Marie', sa: 24 },
   { id: 'P-2024-0841', nom: 'Petit', prenom: 'Isabelle', sa: 32 },
@@ -41,8 +48,9 @@ function statusForItem(itemId: string, sa: number, saMin: number, saMax: number,
 }
 
 export default function PrenatalPage() {
-  const [patientId, setPatientId] = useState(MOCK_PATIENTS[0]?.id ?? '');
-  const [sa, setSa] = useState(MOCK_PATIENTS[0]?.sa ?? 28);
+  const [patients, setPatients] = useState<PatientOption[]>([]);
+  const [patientId, setPatientId] = useState('');
+  const [sa, setSa] = useState(28);
   const [agentUp, setAgentUp] = useState(false);
   const [alertes, setAlertes] = useState<{ type: string; message: string; severite: string }[]>([]);
   const [lastAuditHash, setLastAuditHash] = useState<string | null>(null);
@@ -64,7 +72,52 @@ export default function PrenatalPage() {
     proteinurieBandelette: 'Négatif',
     bcfBpm: 145,
   });
-  const realisedItems = new Set<string>(['epp', 'c1', 'echo1', 'c2', 'c3', 'echo2', 'c4']);
+  const [realisedItemIds, setRealisedItemIds] = useState<string[]>(['epp', 'c1', 'echo1', 'c2', 'c3', 'echo2', 'c4']);
+  const realisedItems = new Set<string>(realisedItemIds);
+
+  useEffect(() => {
+    fetch('/api/patients')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((list: { id: string; nom: string; prenom: string; sa: number }[]) => {
+        const opts = Array.isArray(list) ? list.map((p) => ({ id: p.id, nom: p.nom, prenom: p.prenom, sa: p.sa })) : [];
+        setPatients(opts.length ? opts : DEMO_PATIENTS);
+      })
+      .catch(() => setPatients(DEMO_PATIENTS));
+  }, []);
+
+  useEffect(() => {
+    if (patients.length && !patientId) {
+      setPatientId(patients[0].id);
+      setSa(patients[0].sa);
+    }
+  }, [patients, patientId]);
+
+  useEffect(() => {
+    if (!patientId) return;
+    fetch(`/api/dossiers/${encodeURIComponent(patientId)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((dossier: Record<string, unknown> | null) => {
+        if (!dossier) return;
+        const cal = dossier.calendar as { items?: { id: string; status?: string }[] } | undefined;
+        const items = cal?.items ?? [];
+        const realised = items.filter((i) => i.status === 'realisee').map((i) => i.id);
+        if (realised.length) setRealisedItemIds(realised);
+        const cons = (dossier.consultations as Record<string, unknown>[]) ?? [];
+        const last = cons[cons.length - 1];
+        if (last && typeof last === 'object') {
+          setConsultation((c) => ({
+            ...c,
+            paSystolique: (last.paSystolique as number) ?? c.paSystolique,
+            paDiastolique: (last.paDiastolique as number) ?? c.paDiastolique,
+            poids: (last.poids as number) ?? c.poids,
+            hauteurUterine: (last.hauteurUterine as number) ?? c.hauteurUterine,
+            bcfBpm: (last.bcfBpm as number) ?? c.bcfBpm,
+            proteinurieBandelette: (last.proteinurieBandelette as string) ?? c.proteinurieBandelette,
+          }));
+        }
+      })
+      .catch(() => {});
+  }, [patientId]);
 
   useEffect(() => {
     healthPrenatal()
@@ -78,17 +131,29 @@ export default function PrenatalPage() {
       .catch(() => setNorms(null));
   }, [sa]);
 
+  const saveDossier = (dossier: Record<string, unknown>) => {
+    if (!patientId) return;
+    fetch(`/api/dossiers/${encodeURIComponent(patientId)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dossier),
+    }).catch(() => {});
+  };
+
+  const buildDossier = () => ({
+    patientId,
+    calendar: { items: TIMELINE_ITEMS.map((i) => ({ ...i, status: statusForItem(i.id, sa, i.saMin, i.saMax, realisedItems), saCibleMax: i.saMax })) },
+    consultations: [{ ...consultation, sa, date: new Date().toISOString().slice(0, 10) }],
+    biologicalExams: [],
+  });
+
   const handleEvaluate = () => {
-    const dossier = {
-      patientId,
-      calendar: { items: TIMELINE_ITEMS.map((i) => ({ ...i, status: statusForItem(i.id, sa, i.saMin, i.saMax, realisedItems), saCibleMax: i.saMax })) },
-      consultations: [],
-      biologicalExams: [],
-    };
+    const dossier = buildDossier();
     evaluatePrenatal(dossier as unknown as Record<string, unknown>, sa)
       .then((r) => {
         setAlertes(r.alertes || []);
         setLastAuditHash((r as { audit_hash?: string }).audit_hash ?? null);
+        saveDossier(dossier);
       })
       .catch(() => {
         setAlertes([{ type: 'Agent', message: 'Agent indisponible.', severite: 'info' }]);
@@ -100,12 +165,8 @@ export default function PrenatalPage() {
     setReportLoading(true);
     setReport(null);
     setReportModalOpen(true);
-    const dossier = {
-      patientId,
-      calendar: { items: TIMELINE_ITEMS.map((i) => ({ ...i, status: statusForItem(i.id, sa, i.saMin, i.saMax, realisedItems) })) },
-      consultations: [],
-      biologicalExams: [],
-    };
+    const dossier = buildDossier();
+    saveDossier(dossier);
     generatePrenatalReport({
       patient_id: patientId,
       dossier,
@@ -151,7 +212,7 @@ export default function PrenatalPage() {
       .catch(() => setGbsResult({ resultat: '—', sa }));
   };
 
-  const patient = MOCK_PATIENTS.find((p) => p.id === patientId);
+  const patient = patients.find((p) => p.id === patientId);
 
   return (
     <div className="space-y-6">
@@ -171,11 +232,11 @@ export default function PrenatalPage() {
             value={patientId}
             onChange={(e) => {
               setPatientId(e.target.value);
-              const p = MOCK_PATIENTS.find((x) => x.id === e.target.value);
+              const p = patients.find((x) => x.id === e.target.value);
               if (p) setSa(p.sa);
             }}
           >
-            {MOCK_PATIENTS.map((p) => (
+            {patients.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.prenom} {p.nom} — {p.sa} SA
               </option>

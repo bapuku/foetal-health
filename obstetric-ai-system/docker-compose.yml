@@ -15,6 +15,10 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     env_file: .env
+    environment:
+      - DATA_DIR=/app/data
+    volumes:
+      - obstetric-data:/app/data
     depends_on:
       - ctg-monitor
       - apgar-transition
@@ -149,3 +153,6 @@ services:
 networks:
   obstetric:
     driver: bridge
+
+volumes:
+  obstetric-data:

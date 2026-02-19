@@ -19,9 +19,12 @@ interface SkillCardProps {
   endpoint?: string;
   /** Payload envoyé au clic Tester (défaut: { demo: true }) */
   demoPayload?: Record<string, unknown>;
+  /** Activer/désactiver la skill (affichage + persistance côté page) */
+  active?: boolean;
+  onToggleActive?: () => void;
 }
 
-export default function SkillCard({ agentName, port, status, skills, endpoint, demoPayload }: SkillCardProps) {
+export default function SkillCard({ agentName, port, status, skills, endpoint, demoPayload, active = true, onToggleActive }: SkillCardProps) {
   const [execResult, setExecResult] = useState<{ loading: boolean; data?: string; ok?: boolean; ms?: number } | null>(null);
   const [expanded, setExpanded] = useState(false);
 
@@ -30,7 +33,8 @@ export default function SkillCard({ agentName, port, status, skills, endpoint, d
     const t0 = Date.now();
     try {
       const ep = endpoint || `/api/${agentName.toLowerCase().replace(/\s+/g, '-')}`;
-      const res = await fetch(`http://localhost:${port}${ep}`, {
+      const url = ep.startsWith('/api/') ? ep : `http://localhost:${port}${ep}`;
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(demoPayload ?? { demo: true }),
@@ -85,7 +89,7 @@ export default function SkillCard({ agentName, port, status, skills, endpoint, d
         )}
       </div>
 
-      <div className="mt-3 flex items-center gap-2">
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         <button
           type="button"
           onClick={executeSkill}
@@ -94,6 +98,15 @@ export default function SkillCard({ agentName, port, status, skills, endpoint, d
         >
           {execResult?.loading ? 'Execution...' : 'Executer (demo)'}
         </button>
+        {onToggleActive != null && (
+          <button
+            type="button"
+            onClick={onToggleActive}
+            className={`rounded-lg border px-3 py-1.5 text-xs font-medium ${active ? 'border-amber-300 bg-amber-50 text-amber-800' : 'border-slate-200 bg-slate-100 text-slate-600'}`}
+          >
+            {active ? 'Désactiver' : 'Activer'}
+          </button>
+        )}
         <span className="text-xs text-slate-400">Port {port}</span>
       </div>
 

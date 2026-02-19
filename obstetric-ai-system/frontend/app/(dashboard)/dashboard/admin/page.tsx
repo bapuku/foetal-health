@@ -25,9 +25,10 @@ interface ConnectionConfig {
 }
 
 interface AlertConfig {
-  email: { enabled: boolean; provider: string; from: string; apiKeyConfigured: boolean };
-  sms: { enabled: boolean; provider: string; from: string; configured: boolean };
-  whatsapp: { enabled: boolean; provider: string; from: string; configured: boolean };
+  email: { enabled: boolean; provider: string; from: string; apiKeyConfigured?: boolean };
+  sms: { enabled: boolean; provider: string; from: string; configured?: boolean };
+  whatsapp: { enabled: boolean; provider: string; from: string; configured?: boolean };
+  slack?: { enabled: boolean; webhookUrl: string };
   recipients: { type: string; email?: string; phone?: string }[];
 }
 
@@ -380,6 +381,8 @@ function AlertsTab({
   const [smsFrom, setSmsFrom] = useState(data?.sms?.from ?? '');
   const [waEnabled, setWaEnabled] = useState(data?.whatsapp?.enabled ?? false);
   const [waFrom, setWaFrom] = useState(data?.whatsapp?.from ?? '');
+  const [slackEnabled, setSlackEnabled] = useState(data?.slack?.enabled ?? false);
+  const [slackWebhookUrl, setSlackWebhookUrl] = useState(data?.slack?.webhookUrl ?? '');
   const [recipients, setRecipients] = useState(data?.recipients ?? []);
 
   useEffect(() => {
@@ -390,6 +393,8 @@ function AlertsTab({
       setSmsFrom(data.sms?.from ?? '');
       setWaEnabled(data.whatsapp?.enabled ?? false);
       setWaFrom(data.whatsapp?.from ?? '');
+      setSlackEnabled(data.slack?.enabled ?? false);
+      setSlackWebhookUrl(data.slack?.webhookUrl ?? '');
       setRecipients(data.recipients ?? []);
     }
   }, [data]);
@@ -399,6 +404,7 @@ function AlertsTab({
       email: { enabled: emailEnabled, provider: 'sendgrid', from: emailFrom, apiKeyConfigured: !!process.env.SENDGRID_API_KEY },
       sms: { enabled: smsEnabled, provider: 'twilio', from: smsFrom, configured: !!process.env.TWILIO_ACCOUNT_SID },
       whatsapp: { enabled: waEnabled, provider: 'twilio', from: waFrom, configured: !!process.env.TWILIO_WHATSAPP_FROM },
+      slack: { enabled: slackEnabled, webhookUrl: slackWebhookUrl },
       recipients,
     });
   };
@@ -466,6 +472,25 @@ function AlertsTab({
               onChange={(e) => setWaFrom(e.target.value)}
               placeholder="whatsapp:+33..."
               className="input-field w-full max-w-xs"
+            />
+          </div>
+        </div>
+      </div>
+      <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <h2 className="mb-4 text-sm font-semibold text-slate-700">Slack</h2>
+        <div className="space-y-3">
+          <label className="flex items-center gap-2">
+            <input type="checkbox" checked={slackEnabled} onChange={(e) => setSlackEnabled(e.target.checked)} />
+            <span className="text-sm">Activer les alertes Slack (Webhook entrant)</span>
+          </label>
+          <div>
+            <label className="mb-1 block text-xs text-slate-500">URL du Webhook Slack</label>
+            <input
+              type="url"
+              value={slackWebhookUrl}
+              onChange={(e) => setSlackWebhookUrl(e.target.value)}
+              placeholder="https://hooks.slack.com/services/..."
+              className="input-field w-full max-w-lg"
             />
           </div>
         </div>

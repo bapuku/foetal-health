@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import SkillCard, { type SkillItem } from '@/components/registry/SkillCard';
 import PageBanner from '@/components/ui/PageBanner';
 
+const SKILLS_ACTIVE_STORAGE_KEY = 'obstetric-skills-active';
+
 interface AgentSkills {
   name: string;
   port: number;
@@ -122,22 +124,57 @@ const AGENTS_SKILLS: AgentSkills[] = [
 
 export default function SkillsPage() {
   const [statuses, setStatuses] = useState<Record<number, 'up' | 'down'>>({});
+  const [activeSkills, setActiveSkills] = useState<Record<string, boolean>>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      const raw = localStorage.getItem(SKILLS_ACTIVE_STORAGE_KEY);
+      return raw ? (JSON.parse(raw) as Record<string, boolean>) : {};
+    } catch {
+      return {};
+    }
+  });
 
   useEffect(() => {
+    const healthPaths: Record<number, string> = {
+      8000: '/api/ctg-monitor/health',
+      8001: '/api/apgar/health',
+      8010: '/api/prenatal-followup/health',
+    };
     AGENTS_SKILLS.forEach((a) => {
-      fetch(`http://localhost:${a.port}/health`, { signal: AbortSignal.timeout(2000) })
+      const path = healthPaths[a.port] || `http://localhost:${a.port}/health`;
+      const url = path.startsWith('http') ? path : path;
+      fetch(url, { signal: AbortSignal.timeout(2000) })
         .then((r) => r.ok ? 'up' as const : 'down' as const)
         .catch(() => 'down' as const)
         .then((s) => setStatuses((prev) => ({ ...prev, [a.port]: s })));
     });
   }, []);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem(SKILLS_ACTIVE_STORAGE_KEY, JSON.stringify(activeSkills));
+    } catch {
+      // ignore
+    }
+  }, [activeSkills]);
+
+  const handleToggleSkill = (key: string) => {
+    setActiveSkills((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const skillKey = (agent: AgentSkills) => `${agent.name}-${agent.port}`;
+
   return (
     <div className="space-y-6">
       <PageBanner src="/images/surgical-team.png" alt="Équipe médicale" title="Registre des compétences (Skills)" subtitle="Capacités exposées par chaque agent" />
       <div>
         <h1 className="text-xl font-bold text-slate-900">Registre des competences (Skills)</h1>
-        <p className="text-sm text-slate-500">Capacites exposees par chaque agent.</p>
+        <p className="text-sm text-slate-500">Capacites exposees par chaque agent. Activer/désactiver pour filtrer (état enregistré localement). Utilisées dans les workflows par agent.</p>
+      </div>
+
+      <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
+        <p className="font-medium text-slate-700">Utilisation dans les workflows</p>
+        <p className="mt-1">Chaque template de workflow (Suivi prénatal, CTG + Bishop, etc.) appelle des agents par ordre. Les skills listées ici correspondent aux capacités de chaque agent. L’état Activer/Désactiver est enregistré localement pour votre préférence d’affichage.</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -150,6 +187,8 @@ export default function SkillsPage() {
             skills={agent.skills}
             endpoint={agent.endpoint}
             demoPayload={agent.demoPayload}
+            active={activeSkills[skillKey(agent)] !== false}
+            onToggleActive={() => handleToggleSkill(skillKey(agent))}
           />
         ))}
       </div>

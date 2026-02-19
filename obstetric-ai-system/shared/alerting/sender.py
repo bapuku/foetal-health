@@ -141,3 +141,27 @@ def _send_twilio_message(to: str, body: str, from_: Optional[str], channel: str)
             return True
     except Exception:
         return False
+
+
+def send_slack(webhook_url: str, text: str) -> bool:
+    """
+    Envoie un message vers un canal Slack via Webhook entrant.
+    webhook_url: URL du webhook Slack (Incoming Webhooks).
+    """
+    import urllib.request
+    import json
+
+    if not webhook_url or not webhook_url.strip().startswith("https://"):
+        return False
+    payload = json.dumps({"text": text}).encode()
+    req = urllib.request.Request(
+        webhook_url.strip(),
+        data=payload,
+        method="POST",
+        headers={"Content-Type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as _:
+            return True
+    except Exception:
+        return False
