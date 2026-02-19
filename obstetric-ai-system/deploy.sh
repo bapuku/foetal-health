@@ -12,7 +12,7 @@ set -euo pipefail
 VPS_HOST="51.77.144.54"
 VPS_USER="root"
 VPS_HOSTNAME="vps-d6ab33ba.vps.ovh.net"
-REPO_URL="git@github.com-obstetric:bapuku/OBSTETRICALAPPLICATION.git"
+REPO_URL="https://github.com/bapuku/foetal-health.git"
 APP_DIR="/opt/obstetric-ai"
 
 # ── Colors ──────────────────────────────────────────────
@@ -71,26 +71,35 @@ systemctl enable fail2ban --now 2>/dev/null || true
 ok "Fail2ban active"
 
 # ── 5. Clone / pull repo ──────────────────────────────
-if [ -d "$APP_DIR/.git" ]; then
+CLONE_DIR="/opt/obstetric-ai-repo"
+if [ -d "$CLONE_DIR/.git" ]; then
     info "Pulling latest changes..."
-    cd "$APP_DIR"
+    cd "$CLONE_DIR"
     git pull origin main
-elif [ -d "$APP_DIR" ]; then
-    warn "Directory $APP_DIR exists but is not a git repo. Cloning fresh and replacing..."
-    if [ -f "$APP_DIR/.env" ]; then
-        cp "$APP_DIR/.env" /tmp/obstetric-ai-env.bak
-        info "Backed up .env to /tmp/obstetric-ai-env.bak"
-    fi
-    git clone "$REPO_URL" "${APP_DIR}.new"
-    [ -f /tmp/obstetric-ai-env.bak ] && cp /tmp/obstetric-ai-env.bak "${APP_DIR}.new/.env"
-    rm -rf "$APP_DIR"
-    mv "${APP_DIR}.new" "$APP_DIR"
-    cd "$APP_DIR"
 else
     info "Cloning repository..."
-    git clone "$REPO_URL" "$APP_DIR"
-    cd "$APP_DIR"
+    rm -rf "$CLONE_DIR"
+    git clone "$REPO_URL" "$CLONE_DIR"
 fi
+
+# Backup .env if it exists
+if [ -f "$APP_DIR/.env" ]; then
+    cp "$APP_DIR/.env" /tmp/obstetric-ai-env.bak
+    info "Backed up .env to /tmp/obstetric-ai-env.bak"
+fi
+
+# Sync obstetric-ai-system subdirectory to APP_DIR
+info "Syncing obstetric-ai-system/ to $APP_DIR..."
+mkdir -p "$APP_DIR"
+rsync -a --delete "$CLONE_DIR/obstetric-ai-system/" "$APP_DIR/"
+
+# Restore .env
+if [ -f /tmp/obstetric-ai-env.bak ]; then
+    cp /tmp/obstetric-ai-env.bak "$APP_DIR/.env"
+    info "Restored .env"
+fi
+
+cd "$APP_DIR"
 ok "Code ready at $APP_DIR"
 
 # ── 6. Environment file ───────────────────────────────
