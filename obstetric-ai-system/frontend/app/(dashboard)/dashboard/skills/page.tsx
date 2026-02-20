@@ -135,19 +135,15 @@ export default function SkillsPage() {
   });
 
   useEffect(() => {
-    const healthPaths: Record<number, string> = {
-      8000: '/api/ctg-monitor/health',
-      8001: '/api/apgar/health',
-      8010: '/api/prenatal-followup/health',
-    };
-    AGENTS_SKILLS.forEach((a) => {
-      const path = healthPaths[a.port] || `http://localhost:${a.port}/health`;
-      const url = path.startsWith('http') ? path : path;
-      fetch(url, { signal: AbortSignal.timeout(2000) })
-        .then((r) => r.ok ? 'up' as const : 'down' as const)
-        .catch(() => 'down' as const)
-        .then((s) => setStatuses((prev) => ({ ...prev, [a.port]: s })));
-    });
+    fetch('/api/agents/health', { signal: AbortSignal.timeout(10000) })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { agents: { port: number; status: 'up' | 'down' }[] } | null) => {
+        if (!data?.agents) return;
+        const map: Record<number, 'up' | 'down'> = {};
+        data.agents.forEach((a) => { map[a.port] = a.status; });
+        setStatuses(map);
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {

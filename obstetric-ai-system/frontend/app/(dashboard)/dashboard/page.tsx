@@ -48,18 +48,20 @@ export default function DashboardOverview() {
   const [agentDemoLoading, setAgentDemoLoading] = useState(false);
 
   useEffect(() => {
-    AGENTS.forEach((agent, idx) => {
-      fetch(`http://localhost:${agent.port}/health`, { signal: AbortSignal.timeout(3000) })
-        .then((r) => r.ok ? 'up' as const : 'down' as const)
-        .catch(() => 'down' as const)
-        .then((status) => {
-          setAgentStatuses((prev) => {
-            const next = [...prev];
-            next[idx] = { ...next[idx], status };
-            return next;
-          });
-        });
-    });
+    fetch('/api/agents/health', { signal: AbortSignal.timeout(10000) })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { agents: { name: string; port: number; status: 'up' | 'down' }[] } | null) => {
+        if (!data?.agents) return;
+        setAgentStatuses((prev) =>
+          prev.map((a) => {
+            const match = data.agents.find((h) => h.port === a.port);
+            return match ? { ...a, status: match.status } : { ...a, status: 'down' };
+          }),
+        );
+      })
+      .catch(() => {
+        setAgentStatuses((prev) => prev.map((a) => ({ ...a, status: 'down' })));
+      });
   }, []);
 
   const upCount = agentStatuses.filter((a) => a.status === 'up').length;
@@ -437,7 +439,7 @@ export default function DashboardOverview() {
                   setAgentDemoLoading(true);
                   setAgentDemoResult(null);
                   try {
-                    const res = await fetch(`http://localhost:${agentModal.port}${agentModal.endpoint}`, {
+                    const res = await fetch(`${agentModal.endpoint}`, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ demo: true }),

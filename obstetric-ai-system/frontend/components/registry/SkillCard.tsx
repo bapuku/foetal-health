@@ -33,8 +33,7 @@ export default function SkillCard({ agentName, port, status, skills, endpoint, d
     const t0 = Date.now();
     try {
       const ep = endpoint || `/api/${agentName.toLowerCase().replace(/\s+/g, '-')}`;
-      const url = ep.startsWith('/api/') ? ep : `http://localhost:${port}${ep}`;
-      const res = await fetch(url, {
+      const res = await fetch(ep, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(demoPayload ?? { demo: true }),

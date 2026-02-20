@@ -149,11 +149,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     let cancelled = false;
-    const t0 = Date.now();
-    fetch('http://localhost:8000/health', { signal: AbortSignal.timeout(2000) })
-      .then((r) => {
-        if (cancelled) return;
-        if (r.ok) setDemoMode(false);
+    fetch('/api/agents/health', { signal: AbortSignal.timeout(10000) })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { agents: { port: number; status: 'up' | 'down' }[] } | null) => {
+        if (cancelled || !data?.agents) return;
+        const anyUp = data.agents.some((a) => a.status === 'up');
+        if (anyUp) setDemoMode(false);
       })
       .catch(() => {
         if (!cancelled) setDemoMode(true);
@@ -166,13 +167,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       setSidebarStatuses(Object.fromEntries(AGENTS.map((a) => [a.port, 'demo'])));
       return;
     }
-    AGENTS.forEach((agent) => {
-      const t0 = Date.now();
-      fetch(`http://localhost:${agent.port}/health`, { signal: AbortSignal.timeout(3000) })
-        .then((r) => r.ok ? 'up' as const : 'down' as const)
-        .catch(() => 'down' as const)
-        .then((s) => setSidebarStatuses((prev) => ({ ...prev, [agent.port]: s })));
-    });
+    fetch('/api/agents/health', { signal: AbortSignal.timeout(10000) })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { agents: { port: number; status: 'up' | 'down' }[] } | null) => {
+        if (!data?.agents) return;
+        const map: Record<number, AgentStatus> = {};
+        data.agents.forEach((a) => { map[a.port] = a.status; });
+        setSidebarStatuses((prev) => ({ ...prev, ...map }));
+      })
+      .catch(() => {});
   };
 
   useEffect(() => {
@@ -190,8 +193,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
     setAgentLive({ status: 'loading', demoResult });
     const t0 = Date.now();
-    fetch(`http://localhost:${agent.port}/health`, { signal: AbortSignal.timeout(3000) })
-      .then((r) => setAgentLive((prev) => ({ ...prev, status: r.ok ? 'up' : 'down', latencyMs: Date.now() - t0 })))
+    fetch('/api/agents/health', { signal: AbortSignal.timeout(10000) })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { agents: { port: number; status: 'up' | 'down' }[] } | null) => {
+        const match = data?.agents?.find((a) => a.port === agent.port);
+        const status = match?.status === 'up' ? 'up' : 'down';
+        setAgentLive((prev) => ({ ...prev, status, latencyMs: Date.now() - t0 }));
+      })
       .catch(() => setAgentLive((prev) => ({ ...prev, status: 'down', latencyMs: Date.now() - t0 })));
   };
 
@@ -205,7 +213,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setAgentLive((prev) => ({ ...prev, status: 'loading' }));
     const t0 = Date.now();
     try {
-      const res = await fetch(`http://localhost:${agent.port}${agent.endpoint}`, {
+      const res = await fetch(`${agent.endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ demo: true }),

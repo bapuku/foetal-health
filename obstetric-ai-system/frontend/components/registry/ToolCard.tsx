@@ -69,7 +69,7 @@ export default function ToolCard({
     const method = demo?.method ?? (endpoint === '/health' ? 'GET' : 'POST');
 
     try {
-      const url = method === 'GET' && endpoint.includes('norms') ? `http://localhost:${port}${endpoint}?sa=28` : `http://localhost:${port}${endpoint}`;
+      const url = method === 'GET' && endpoint.includes('norms') ? `${endpoint}?sa=28` : endpoint;
       const res = await fetch(url, {
         method,
         headers: method === 'POST' ? { 'Content-Type': 'application/json' } : {},
