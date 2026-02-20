@@ -1,43 +1,72 @@
 'use client';
 
+import { useState } from 'react';
 import CTGChart from '@/components/medical/CTGChart';
 import CTGAnalysisForm from '@/components/medical/CTGAnalysisForm';
 import PageBanner from '@/components/ui/PageBanner';
+import PatientSelector, { type PatientOption } from '@/components/ui/PatientSelector';
 
 export default function CTGPage() {
+  const [selectedPatient, setSelectedPatient] = useState<PatientOption | null>(null);
+
   return (
     <div className="space-y-6">
-      <PageBanner src="/images/ctg-monitor.png" alt="Monitoring CTG" title="Monitoring CTG" subtitle="Cardiotocographie fœtale - Classification FIGO temps réel" />
+      <PageBanner src="/images/ctg-monitor.png" alt="Monitoring CTG" title="Monitoring CTG" subtitle="Cardiotocographie foetale - Classification FIGO temps reel" />
       <div>
         <h1 className="text-xl font-bold text-slate-900">Monitoring CTG</h1>
         <p className="text-sm text-slate-500">
-          Cardiotocographie foetale - Classification FIGO temps reel
+          Selectionnez une patiente puis lancez le monitoring CTG et l&apos;analyse FIGO.
         </p>
       </div>
 
-      {/* Stats rapides */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <div className="card">
-          <p className="text-sm text-slate-500">Analyses aujourd&apos;hui</p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">12</p>
-        </div>
-        <div className="card">
-          <p className="text-sm text-slate-500">Classification normale</p>
-          <p className="mt-1 text-2xl font-bold text-green-600">83%</p>
-        </div>
-        <div className="card">
-          <p className="text-sm text-slate-500">HITL en attente</p>
-          <p className="mt-1 text-2xl font-bold text-amber-600">1</p>
-        </div>
-      </div>
+      <PatientSelector
+        selected={selectedPatient}
+        onSelect={(p) => setSelectedPatient(selectedPatient?.id === p.id ? null : p)}
+        label="Patiente pour le monitoring CTG"
+      />
 
-      {/* CTG Chart */}
-      <CTGChart />
+      {!selectedPatient && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          Selectionnez une patiente pour demarrer le monitoring CTG.
+        </div>
+      )}
 
-      {/* Analysis Form */}
-      <CTGAnalysisForm />
+      {selectedPatient && (
+        <>
+          {/* Stats rapides */}
+          <div className="grid gap-4 sm:grid-cols-4">
+            <div className="card">
+              <p className="text-sm text-slate-500">Patiente</p>
+              <p className="mt-1 text-lg font-bold text-slate-900">{selectedPatient.prenom} {selectedPatient.nom}</p>
+              <p className="text-xs text-slate-400">{selectedPatient.id} &middot; {selectedPatient.sa} SA &middot; {selectedPatient.age} ans</p>
+            </div>
+            <div className="card">
+              <p className="text-sm text-slate-500">Analyses aujourd&apos;hui</p>
+              <p className="mt-1 text-2xl font-bold text-slate-900">12</p>
+            </div>
+            <div className="card">
+              <p className="text-sm text-slate-500">Classification normale</p>
+              <p className="mt-1 text-2xl font-bold text-green-600">83%</p>
+            </div>
+            <div className="card">
+              <p className="text-sm text-slate-500">HITL en attente</p>
+              <p className="mt-1 text-2xl font-bold text-amber-600">1</p>
+            </div>
+          </div>
 
-      {/* Legend */}
+          {/* CTG Chart */}
+          <CTGChart patientLabel={`${selectedPatient.prenom} ${selectedPatient.nom} (${selectedPatient.id})`} />
+
+          {/* Analysis Form */}
+          <CTGAnalysisForm
+            patientId={selectedPatient.id}
+            patientLabel={`${selectedPatient.prenom} ${selectedPatient.nom}`}
+            patientSa={selectedPatient.sa}
+          />
+        </>
+      )}
+
+      {/* Legend - always visible */}
       <div className="card">
         <h3 className="text-sm font-semibold text-slate-700 mb-3">Classification FIGO</h3>
         <div className="grid gap-3 sm:grid-cols-3">

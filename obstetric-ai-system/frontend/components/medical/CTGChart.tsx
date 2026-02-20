@@ -5,7 +5,11 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceL
 const FIGO_NORMAL_MIN = 110;
 const FIGO_NORMAL_MAX = 160;
 
-export default function CTGChart() {
+interface CTGChartProps {
+  patientLabel?: string;
+}
+
+export default function CTGChart({ patientLabel }: CTGChartProps) {
   const data = useMemo(
     () =>
       Array.from({ length: 180 }, (_, i) => ({
@@ -30,8 +34,8 @@ export default function CTGChart() {
     <div className="card">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h2 className="text-base font-semibold text-slate-900">Frequence cardiaque foetale (FHR)</h2>
-          <p className="text-xs text-slate-500">Trace CTG temps reel - 30 dernieres minutes</p>
+          <h2 className="text-base font-semibold text-slate-900">Frequence cardiaque foetale (FHR){patientLabel ? ` — ${patientLabel}` : ''}</h2>
+          <p className="text-xs text-slate-500">Trace CTG temps reel - 30 dernieres minutes{patientLabel ? ` · ${patientLabel}` : ''}</p>
         </div>
         <div className="flex items-center gap-4">
           <div className="text-right">

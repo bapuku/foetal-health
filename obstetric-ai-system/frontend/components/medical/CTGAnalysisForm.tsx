@@ -5,7 +5,13 @@ import { analyzeCTG, type CTGOutput } from '@/lib/api';
 import BadgeAction from '@/components/ui/BadgeAction';
 import ActionModal from '@/components/ui/ActionModal';
 
-export default function CTGAnalysisForm() {
+interface CTGAnalysisFormProps {
+  patientId?: string;
+  patientLabel?: string;
+  patientSa?: number;
+}
+
+export default function CTGAnalysisForm({ patientId, patientLabel, patientSa }: CTGAnalysisFormProps) {
   const [baselineBpm, setBaselineBpm] = useState(140);
   const [stvMs, setStvMs] = useState(12);
   const [decelLight, setDecelLight] = useState(0);
@@ -38,8 +44,14 @@ export default function CTGAnalysisForm() {
   return (
     <div className="card">
       <div className="mb-4">
-        <h2 className="text-base font-semibold text-slate-900">Analyse CTG manuelle</h2>
-        <p className="text-xs text-slate-500">Soumettre des parametres pour classification FIGO via l&apos;agent CTG Monitor</p>
+        <h2 className="text-base font-semibold text-slate-900">
+          Analyse CTG{patientLabel ? ` — ${patientLabel}` : ''}
+        </h2>
+        <p className="text-xs text-slate-500">
+          {patientId
+            ? `Classification FIGO pour ${patientId} (${patientSa ?? '—'} SA)`
+            : 'Soumettre des parametres pour classification FIGO via l\'agent CTG Monitor'}
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -113,6 +125,11 @@ export default function CTGAnalysisForm() {
 
       {result && (
         <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+          {patientId && (
+            <p className="text-xs text-blue-700 font-medium mb-2">
+              Resultat pour {patientLabel ?? patientId} ({patientSa ?? '—'} SA)
+            </p>
+          )}
           <div className="flex items-center gap-4 mb-3 flex-wrap">
             <BadgeAction
               variant={result.classification === 'Pathologique' ? 'danger' : result.classification === 'Suspect' ? 'warn' : 'ok'}
@@ -142,13 +159,16 @@ export default function CTGAnalysisForm() {
       <ActionModal
         isOpen={classificationModalOpen}
         onClose={() => setClassificationModalOpen(false)}
-        title="Detail classification FIGO"
+        title={`Detail classification FIGO${patientLabel ? ` — ${patientLabel}` : ''}`}
         size="lg"
         actions={<button type="button" onClick={() => setClassificationModalOpen(false)} className="btn-primary">Fermer</button>}
       >
         <div className="space-y-3 text-sm">
           {result && (
             <>
+              {patientId && (
+                <p className="text-blue-700 font-medium">Patiente : {patientLabel ?? patientId} ({patientSa ?? '—'} SA)</p>
+              )}
               <p><strong>Classification :</strong> {result.classification} (confiance {(result.confidence * 100).toFixed(0)}%)</p>
               <p className="text-slate-600">{result.narrative}</p>
               <p className="font-medium text-slate-700">Features SHAP (importance) :</p>
