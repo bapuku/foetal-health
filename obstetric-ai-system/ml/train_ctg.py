@@ -25,7 +25,7 @@ def load_csv(path: str) -> tuple:
         row = X[i]
         for t in range(INPUT_LEN):
             X_seq[i, 0, t] = row[t % len(row)]
-    return torch.from_numpy(X_seq), torch.from_numpy(y).long()
+    return torch.from_numpy(X_seq.copy()), torch.from_numpy(y.copy()).long()
 
 def main():
     p = argparse.ArgumentParser()
@@ -43,6 +43,7 @@ def main():
     X, y = load_csv(args.data)
     model = build_ctg_classifier()
     opt = torch.optim.AdamW(model.parameters(), lr=args.lr)
+    log_every = max(1, args.epochs // 20)
     for epoch in range(args.epochs):
         model.train()
         opt.zero_grad()
@@ -50,7 +51,8 @@ def main():
         loss = torch.nn.functional.cross_entropy(out, y)
         loss.backward()
         opt.step()
-        print(f"Epoch {epoch+1} loss={loss.item():.4f}")
+        if (epoch + 1) % log_every == 0 or epoch == 0:
+            print(f"Epoch {epoch+1}/{args.epochs} loss={loss.item():.4f}", flush=True)
     torch.save(model.state_dict(), "ctg_classifier.pt")
     print("Saved ctg_classifier.pt")
 

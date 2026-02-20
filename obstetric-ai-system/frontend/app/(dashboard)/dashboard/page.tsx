@@ -21,11 +21,28 @@ const AGENTS = [
 
 type AgentStatus = { name: string; port: number; desc: string; endpoint: string; status: 'up' | 'down' | 'loading' };
 
+type HitlAlert = {
+  id: string;
+  title: string;
+  detail: string;
+  time: string;
+};
+
+const INITIAL_HITL_ALERTS: HitlAlert[] = [
+  { id: 'hitl-ctg-0831', title: 'CTG Pathologique', detail: 'Patiente #P-2024-0831', time: '14:15' },
+  { id: 'hitl-apgar-0309', title: 'Apgar 5 min ≤ 6', detail: 'Naissance #N-0309', time: '13:02' },
+  { id: 'hitl-has-0841', title: 'Déviation HAS', detail: 'Patiente #P-2024-0841', time: '12:45' },
+];
+
 export default function DashboardOverview() {
   const [agentStatuses, setAgentStatuses] = useState<AgentStatus[]>(
     AGENTS.map((a) => ({ ...a, status: 'loading' as const }))
   );
   const [hitlModalOpen, setHitlModalOpen] = useState(false);
+  const [hitlAlerts, setHitlAlerts] = useState<HitlAlert[]>(INITIAL_HITL_ALERTS);
+  const [hitlSelected, setHitlSelected] = useState<HitlAlert | null>(null);
+  const [hitlComment, setHitlComment] = useState('');
+  const [hitlActionMsg, setHitlActionMsg] = useState<string | null>(null);
   const [agentModal, setAgentModal] = useState<AgentStatus | null>(null);
   const [agentDemoResult, setAgentDemoResult] = useState<AgentDemoResult | null>(null);
   const [agentDemoLoading, setAgentDemoLoading] = useState(false);
@@ -47,6 +64,34 @@ export default function DashboardOverview() {
 
   const upCount = agentStatuses.filter((a) => a.status === 'up').length;
   const downCount = agentStatuses.filter((a) => a.status === 'down').length;
+
+  const approveAllHitl = () => {
+    setHitlAlerts([]);
+    setHitlSelected(null);
+    setHitlComment('');
+    setHitlActionMsg('Toutes les alertes HITL ont été approuvées.');
+  };
+
+  const rejectAllHitl = () => {
+    setHitlAlerts([]);
+    setHitlSelected(null);
+    setHitlComment('');
+    setHitlActionMsg('Toutes les alertes HITL ont été rejetées.');
+  };
+
+  const approveOneHitl = (id: string) => {
+    setHitlAlerts((prev) => prev.filter((a) => a.id !== id));
+    setHitlSelected(null);
+    setHitlComment('');
+    setHitlActionMsg('Alerte approuvée.');
+  };
+
+  const rejectOneHitl = (id: string) => {
+    setHitlAlerts((prev) => prev.filter((a) => a.id !== id));
+    setHitlSelected(null);
+    setHitlComment('');
+    setHitlActionMsg('Alerte rejetée.');
+  };
 
   const recentActivity = [
     { time: '14:32', event: 'Analyse CTG patiente #P-2024-0847', type: 'ctg', result: 'Normal' },
@@ -102,8 +147,8 @@ export default function DashboardOverview() {
               </svg>
             </div>
           </div>
-          <p className="mt-3 text-3xl font-bold text-amber-600">3</p>
-          <p className="mt-1 text-xs text-amber-600 font-medium">en attente validation (cliquer)</p>
+          <p className="mt-3 text-3xl font-bold text-amber-600">{hitlAlerts.length}</p>
+          <p className="mt-1 text-xs text-amber-600 font-medium">{hitlAlerts.length > 0 ? 'en attente validation (cliquer)' : 'aucune alerte en attente'}</p>
         </div>
 
         <div className="card">
@@ -265,26 +310,116 @@ export default function DashboardOverview() {
 
       <ActionModal
         isOpen={hitlModalOpen}
-        onClose={() => setHitlModalOpen(false)}
+        onClose={() => {
+          setHitlModalOpen(false);
+          setHitlActionMsg(null);
+        }}
         title="Validation HITL - Alertes en attente"
         size="lg"
         actions={
           <>
             <button type="button" onClick={() => setHitlModalOpen(false)} className="btn-secondary">Fermer</button>
-            <button type="button" className="btn-primary">Approuver tout</button>
-            <button type="button" className="rounded-lg border border-red-300 bg-red-50 px-4 py-2 text-sm font-medium text-red-700">Rejeter</button>
+            <button
+              type="button"
+              onClick={approveAllHitl}
+              disabled={hitlAlerts.length === 0}
+              className="btn-primary disabled:opacity-50"
+            >
+              Approuver tout
+            </button>
+            <button
+              type="button"
+              onClick={rejectAllHitl}
+              disabled={hitlAlerts.length === 0}
+              className="rounded-lg border border-red-300 bg-red-50 px-4 py-2 text-sm font-medium text-red-700 disabled:opacity-50"
+            >
+              Rejeter
+            </button>
           </>
         }
       >
         <div className="space-y-3 text-sm">
-          <p className="text-slate-600">3 alertes en attente de validation clinicien.</p>
-          <ul className="list-disc pl-5 space-y-1 text-slate-600">
-            <li>CTG Pathologique - Patiente #P-2024-0831 (14:15)</li>
-            <li>Apgar 5 min &le; 6 - Naissance #N-0309 (13:02)</li>
-            <li>Deviation HAS - Patiente #P-2024-0841 (12:45)</li>
-          </ul>
-          <p className="text-slate-500 text-xs">Cliquez sur une alerte pour commenter ou valider individuellement.</p>
+          {hitlActionMsg && (
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-emerald-800">
+              {hitlActionMsg}
+            </div>
+          )}
+
+          <p className="text-slate-600">
+            {hitlAlerts.length > 0
+              ? `${hitlAlerts.length} alerte(s) en attente de validation clinicien.`
+              : 'Aucune alerte HITL en attente.'}
+          </p>
+
+          {hitlAlerts.length > 0 && (
+            <>
+              <ul className="space-y-2">
+                {hitlAlerts.map((a) => (
+                  <li key={a.id}>
+                    <button
+                      type="button"
+                      onClick={() => { setHitlSelected(a); setHitlComment(''); }}
+                      className="w-full rounded-lg border border-slate-200 bg-white p-3 text-left hover:bg-slate-50"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-slate-800 truncate">{a.title}</p>
+                          <p className="text-xs text-slate-500">{a.detail}</p>
+                        </div>
+                        <span className="text-xs font-mono text-slate-400 shrink-0">{a.time}</span>
+                      </div>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-slate-500 text-xs">Cliquez sur une alerte pour commenter ou valider individuellement.</p>
+            </>
+          )}
         </div>
+      </ActionModal>
+
+      <ActionModal
+        isOpen={!!hitlSelected}
+        onClose={() => { setHitlSelected(null); setHitlComment(''); }}
+        title={hitlSelected ? `Validation HITL — ${hitlSelected.title}` : ''}
+        size="md"
+        actions={
+          hitlSelected ? (
+            <>
+              <button type="button" onClick={() => { setHitlSelected(null); setHitlComment(''); }} className="btn-secondary">
+                Annuler
+              </button>
+              <button type="button" onClick={() => approveOneHitl(hitlSelected.id)} className="btn-primary">
+                Approuver
+              </button>
+              <button
+                type="button"
+                onClick={() => rejectOneHitl(hitlSelected.id)}
+                className="rounded-lg border border-red-300 bg-red-50 px-4 py-2 text-sm font-medium text-red-700"
+              >
+                Rejeter
+              </button>
+            </>
+          ) : null
+        }
+      >
+        {hitlSelected && (
+          <div className="space-y-3 text-sm text-slate-600">
+            <p>
+              <strong>Contexte :</strong> {hitlSelected.detail} ({hitlSelected.time})
+            </p>
+            <p>Commentaire (optionnel) :</p>
+            <textarea
+              className="input-field min-h-[90px]"
+              placeholder="Commentaire clinique..."
+              value={hitlComment}
+              onChange={(e) => setHitlComment(e.target.value)}
+            />
+            <p className="text-xs text-slate-400">
+              (Démo UI) Le commentaire n’est pas encore persisté côté backend.
+            </p>
+          </div>
+        )}
       </ActionModal>
 
       <ActionModal

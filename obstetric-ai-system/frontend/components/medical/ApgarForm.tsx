@@ -13,11 +13,13 @@ export default function ApgarForm() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ApgarOutput | null>(null);
   const [hitlModalOpen, setHitlModalOpen] = useState(false);
+  const [signed, setSigned] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setResult(null);
+    setSigned(false);
     setLoading(true);
     try {
       const out = await evaluateApgar({
@@ -117,6 +119,11 @@ export default function ApgarForm() {
                 </span>
               </BadgeAction>
             )}
+            {signed && (
+              <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800">
+                Validé et signé
+              </span>
+            )}
           </div>
           <p className="text-sm text-slate-700 leading-relaxed">{result.narrative}</p>
         </div>
@@ -130,7 +137,16 @@ export default function ApgarForm() {
         actions={
           <>
             <button type="button" onClick={() => setHitlModalOpen(false)} className="btn-secondary">Fermer</button>
-            <button type="button" className="btn-primary">Valider et signer</button>
+            <button
+              type="button"
+              onClick={() => {
+                setSigned(true);
+                setHitlModalOpen(false);
+              }}
+              className="btn-primary"
+            >
+              Valider et signer
+            </button>
           </>
         }
       >
