@@ -199,8 +199,17 @@ const DEMO_RESULTS: Record<string, AgentDemoResult> = {
   },
 };
 
-export function generateAgentDemoResult(agentName: string): AgentDemoResult {
-  return DEMO_RESULTS[agentName] ?? {
+export interface PatientContext {
+  id: string;
+  nom: string;
+  prenom: string;
+  age: number;
+  sa: number;
+  risque: string;
+}
+
+export function generateAgentDemoResult(agentName: string, patient?: PatientContext): AgentDemoResult {
+  const base = DEMO_RESULTS[agentName] ?? {
     narrative: 'Execution de l\'agent en mode demonstration. Resultat structure pour integration clinique.',
     summary: 'Demo — voir narratif.',
     metrics: [
@@ -208,6 +217,20 @@ export function generateAgentDemoResult(agentName: string): AgentDemoResult {
     ],
     references: [REF_FIGO],
     patientData: [{ field: 'Agent', value: agentName }],
+  };
+  if (!patient) return base;
+  const patientLabel = `${patient.prenom} ${patient.nom} (${patient.id})`;
+  return {
+    ...base,
+    narrative: base.narrative.replace(/P-2024-\d+\s*\(demo\)/g, patientLabel)
+      + ` — Patiente : ${patientLabel}, ${patient.sa} SA, ${patient.age} ans, risque ${patient.risque}.`,
+    patientData: [
+      { field: 'Patient', value: patientLabel },
+      { field: 'SA', value: `${patient.sa} SA` },
+      { field: 'Age', value: `${patient.age} ans` },
+      { field: 'Risque', value: patient.risque },
+      ...base.patientData.filter((d) => !['Patient', 'SA', 'Age', 'Risque'].includes(d.field)),
+    ],
   };
 }
 
@@ -245,7 +268,7 @@ export interface WorkflowRunResult {
   references: AgentReference[];
 }
 
-export function generateWorkflowDemoResult(stepAgents: { agent: string; type: string }[]): WorkflowRunResult {
+export function generateWorkflowDemoResult(stepAgents: { agent: string; type: string }[], patient?: PatientContext): WorkflowRunResult {
   const steps: WorkflowStepResult[] = [];
   const refsMap = new Map<string, AgentReference>();
 
@@ -255,12 +278,13 @@ export function generateWorkflowDemoResult(stepAgents: { agent: string; type: st
       continue;
     }
     const key = agentNameForDemo(s.agent);
-    const result = generateAgentDemoResult(key);
+    const result = generateAgentDemoResult(key, patient);
     (result.references ?? []).forEach((r) => refsMap.set(r.harvard, r));
     steps.push({ agent: s.agent, status: 'success', result });
   }
 
-  const narrative = `Synthèse multi-agents : ${steps.filter((s) => s.result).length} agent(s) exécuté(s), ${steps.filter((s) => s.status === 'hitl').length} point(s) HITL. Les sorties ont été agrégées pour produire un résumé clinique cohérent avec les références FIGO, HAS et CNGOF.`;
+  const patientLabel = patient ? `${patient.prenom} ${patient.nom} (${patient.id}, ${patient.sa} SA)` : '';
+  const narrative = `Synthèse multi-agents${patientLabel ? ` pour ${patientLabel}` : ''} : ${steps.filter((s) => s.result).length} agent(s) exécuté(s), ${steps.filter((s) => s.status === 'hitl').length} point(s) HITL. Les sorties ont été agrégées pour produire un résumé clinique cohérent avec les références FIGO, HAS et CNGOF.`;
   const summary = steps
     .filter((s) => s.result?.summary)
     .map((s) => s.result!.summary)

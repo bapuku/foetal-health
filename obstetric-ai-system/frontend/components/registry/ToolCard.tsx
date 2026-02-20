@@ -14,6 +14,8 @@ interface ToolCardProps {
   testEndpoint?: string;
   testPort?: number;
   onToggleActive?: () => void;
+  disabled?: boolean;
+  patientContext?: { id: string; nom: string; prenom: string; age: number; sa: number; risque: string };
 }
 
 const categoryLabels: Record<ToolCategory, string> = {
@@ -54,6 +56,8 @@ export default function ToolCard({
   testEndpoint,
   testPort,
   onToggleActive,
+  disabled,
+  patientContext,
 }: ToolCardProps) {
   const [testResult, setTestResult] = useState<{ loading: boolean; ok?: boolean; data?: string; ms?: number } | null>(null);
 
@@ -65,7 +69,8 @@ export default function ToolCard({
     const t0 = Date.now();
     const port = testPort ?? demo?.port ?? 8000;
     const endpoint = testEndpoint ?? demo?.endpoint ?? '/health';
-    const body = demo?.body ?? {};
+    const baseBody = demo?.body ?? {};
+    const body = patientContext ? { ...baseBody, patient_id: patientContext.id, sa: patientContext.sa, patient: patientContext } : baseBody;
     const method = demo?.method ?? (endpoint === '/health' ? 'GET' : 'POST');
 
     try {
@@ -121,10 +126,10 @@ export default function ToolCard({
         <button
           type="button"
           onClick={runTest}
-          disabled={testResult?.loading || status === 'inactive'}
-          className="btn-primary text-xs py-1.5 px-3 disabled:opacity-50"
+          disabled={testResult?.loading || status === 'inactive' || disabled}
+          className="btn-primary text-xs py-1.5 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {testResult?.loading ? 'Vérification...' : 'Vérifier'}
+          {disabled ? 'Patiente requise' : testResult?.loading ? 'Verification...' : patientContext ? `Verifier (${patientContext.prenom} ${patientContext.nom})` : 'Verifier'}
         </button>
       </div>
 

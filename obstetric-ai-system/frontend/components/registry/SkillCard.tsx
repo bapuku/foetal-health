@@ -17,14 +17,14 @@ interface SkillCardProps {
   status: 'up' | 'down';
   skills: SkillItem[];
   endpoint?: string;
-  /** Payload envoyé au clic Tester (défaut: { demo: true }) */
   demoPayload?: Record<string, unknown>;
-  /** Activer/désactiver la skill (affichage + persistance côté page) */
   active?: boolean;
   onToggleActive?: () => void;
+  disabled?: boolean;
+  patientLabel?: string;
 }
 
-export default function SkillCard({ agentName, port, status, skills, endpoint, demoPayload, active = true, onToggleActive }: SkillCardProps) {
+export default function SkillCard({ agentName, port, status, skills, endpoint, demoPayload, active = true, onToggleActive, disabled, patientLabel }: SkillCardProps) {
   const [execResult, setExecResult] = useState<{ loading: boolean; data?: string; ok?: boolean; ms?: number } | null>(null);
   const [expanded, setExpanded] = useState(false);
 
@@ -92,10 +92,10 @@ export default function SkillCard({ agentName, port, status, skills, endpoint, d
         <button
           type="button"
           onClick={executeSkill}
-          disabled={execResult?.loading || status === 'down'}
-          className="btn-primary text-xs py-1.5 px-3 disabled:opacity-50"
+          disabled={execResult?.loading || status === 'down' || disabled}
+          className="btn-primary text-xs py-1.5 px-3 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {execResult?.loading ? 'Execution...' : 'Executer (demo)'}
+          {disabled ? 'Patiente requise' : execResult?.loading ? 'Execution...' : patientLabel ? `Executer (${patientLabel})` : 'Executer (demo)'}
         </button>
         {onToggleActive != null && (
           <button

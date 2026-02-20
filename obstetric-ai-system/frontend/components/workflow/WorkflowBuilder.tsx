@@ -19,9 +19,10 @@ const AVAILABLE_AGENTS = [
 
 interface WorkflowBuilderProps {
   onRun: (steps: WorkflowStep[]) => void;
+  disabled?: boolean;
 }
 
-export default function WorkflowBuilder({ onRun }: WorkflowBuilderProps) {
+export default function WorkflowBuilder({ onRun, disabled }: WorkflowBuilderProps) {
   const [steps, setSteps] = useState<WorkflowStep[]>([]);
   const [nextType, setNextType] = useState<'sequential' | 'parallel' | 'hitl'>('sequential');
 
@@ -86,10 +87,10 @@ export default function WorkflowBuilder({ onRun }: WorkflowBuilderProps) {
           <button
             type="button"
             onClick={() => onRun(steps)}
-            disabled={steps.length === 0}
-            className="btn-primary"
+            disabled={steps.length === 0 || disabled}
+            className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Lancer le workflow
+            {disabled ? 'Sélectionnez une patiente' : 'Lancer le workflow'}
           </button>
         </>
       )}

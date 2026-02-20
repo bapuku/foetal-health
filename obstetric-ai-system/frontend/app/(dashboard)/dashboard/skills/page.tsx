@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import SkillCard, { type SkillItem } from '@/components/registry/SkillCard';
 import PageBanner from '@/components/ui/PageBanner';
+import PatientSelector, { type PatientOption } from '@/components/ui/PatientSelector';
 
 const SKILLS_ACTIVE_STORAGE_KEY = 'obstetric-skills-active';
 
@@ -11,7 +12,6 @@ interface AgentSkills {
   port: number;
   endpoint?: string;
   skills: SkillItem[];
-  /** Payload envoyé au clic "Tester" (sinon { demo: true }) */
   demoPayload?: Record<string, unknown>;
 }
 
@@ -32,7 +32,7 @@ const AGENTS_SKILLS: AgentSkills[] = [
     endpoint: '/api/apgar-transition',
     skills: [
       { name: 'Scoring Apgar', description: 'Score 0-10 a 1 et 5 min.', inputs: 'apgar_1min, apgar_5min, signes vitaux', outputs: 'narrative, risk_apgar_low, FHIR Observation', model: 'Claude Sonnet', latencyMs: 1000 },
-      { name: 'Evaluation neonatale', description: 'Adaptation et transition neonatale.', outputs: 'HITL si Apgar 5min ≤ 6' },
+      { name: 'Evaluation neonatale', description: 'Adaptation et transition neonatale.', outputs: 'HITL si Apgar 5min <= 6' },
     ],
   },
   {
@@ -123,6 +123,7 @@ const AGENTS_SKILLS: AgentSkills[] = [
 ];
 
 export default function SkillsPage() {
+  const [selectedPatient, setSelectedPatient] = useState<PatientOption | null>(null);
   const [statuses, setStatuses] = useState<Record<number, 'up' | 'down'>>({});
   const [activeSkills, setActiveSkills] = useState<Record<string, boolean>>(() => {
     if (typeof window === 'undefined') return {};
@@ -162,31 +163,45 @@ export default function SkillsPage() {
 
   return (
     <div className="space-y-6">
-      <PageBanner src="/images/surgical-team.png" alt="Équipe médicale" title="Registre des compétences (Skills)" subtitle="Capacités exposées par chaque agent" />
+      <PageBanner src="/images/surgical-team.png" alt="Equipe medicale" title="Registre des competences (Skills)" subtitle="Capacites exposees par chaque agent" />
       <div>
         <h1 className="text-xl font-bold text-slate-900">Registre des competences (Skills)</h1>
-        <p className="text-sm text-slate-500">Capacites exposees par chaque agent. Activer/désactiver pour filtrer (état enregistré localement). Utilisées dans les workflows par agent.</p>
+        <p className="text-sm text-slate-500">Selectionnez une patiente puis executez les skills sur ses donnees.</p>
       </div>
 
-      <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
-        <p className="font-medium text-slate-700">Utilisation dans les workflows</p>
-        <p className="mt-1">Chaque template de workflow (Suivi prénatal, CTG + Bishop, etc.) appelle des agents par ordre. Les skills listées ici correspondent aux capacités de chaque agent. L’état Activer/Désactiver est enregistré localement pour votre préférence d’affichage.</p>
-      </div>
+      <PatientSelector
+        selected={selectedPatient}
+        onSelect={(p) => setSelectedPatient(selectedPatient?.id === p.id ? null : p)}
+        label="Patiente pour l'execution des skills"
+      />
+
+      {!selectedPatient && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          Selectionnez une patiente pour executer les skills sur ses donnees.
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {AGENTS_SKILLS.map((agent) => (
-          <SkillCard
-            key={agent.port}
-            agentName={agent.name}
-            port={agent.port}
-            status={statuses[agent.port] ?? 'down'}
-            skills={agent.skills}
-            endpoint={agent.endpoint}
-            demoPayload={agent.demoPayload}
-            active={activeSkills[skillKey(agent)] !== false}
-            onToggleActive={() => handleToggleSkill(skillKey(agent))}
-          />
-        ))}
+        {AGENTS_SKILLS.map((agent) => {
+          const payload = selectedPatient
+            ? { ...(agent.demoPayload ?? { demo: true }), patient_id: selectedPatient.id, sa_courante: selectedPatient.sa, patient: { id: selectedPatient.id, nom: selectedPatient.nom, prenom: selectedPatient.prenom, age: selectedPatient.age, sa: selectedPatient.sa, risque: selectedPatient.risque } }
+            : agent.demoPayload;
+          return (
+            <SkillCard
+              key={agent.port}
+              agentName={agent.name}
+              port={agent.port}
+              status={statuses[agent.port] ?? 'down'}
+              skills={agent.skills}
+              endpoint={agent.endpoint}
+              demoPayload={payload}
+              active={activeSkills[skillKey(agent)] !== false}
+              onToggleActive={() => handleToggleSkill(skillKey(agent))}
+              disabled={!selectedPatient}
+              patientLabel={selectedPatient ? `${selectedPatient.prenom} ${selectedPatient.nom} (${selectedPatient.id})` : undefined}
+            />
+          );
+        })}
       </div>
     </div>
   );

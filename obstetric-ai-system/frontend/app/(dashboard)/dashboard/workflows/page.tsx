@@ -6,7 +6,8 @@ import WorkflowBuilder from '@/components/workflow/WorkflowBuilder';
 import type { WorkflowStep } from '@/components/workflow/WorkflowCard';
 import PageBanner from '@/components/ui/PageBanner';
 import ActionModal from '@/components/ui/ActionModal';
-import { generateWorkflowDemoResult, type WorkflowRunResult } from '@/lib/agent-demo-results';
+import PatientSelector, { type PatientOption } from '@/components/ui/PatientSelector';
+import { generateWorkflowDemoResult, type WorkflowRunResult, type PatientContext } from '@/lib/agent-demo-results';
 
 const TEMPLATES: { name: string; description: string; steps: WorkflowStep[] }[] = [
   {
@@ -61,15 +62,9 @@ const TEMPLATES: { name: string; description: string; steps: WorkflowStep[] }[] 
 
 type HistoryEntry = { id: string; date: string; patient: string; workflow: string; status: string; duration: string; result: WorkflowRunResult };
 
-function makeHistoryEntry(id: string, date: string, patient: string, workflow: string, duration: string, result: WorkflowRunResult): HistoryEntry {
-  return { id, date, patient, workflow, status: 'Termine', duration, result };
+function toPatientContext(p: PatientOption): PatientContext {
+  return { id: p.id, nom: p.nom, prenom: p.prenom, age: p.age, sa: p.sa, risque: p.risque };
 }
-
-const MOCK_HISTORY: HistoryEntry[] = [
-  makeHistoryEntry('H1', '2026-02-18 14:32', 'P-2024-0847', 'Urgence CTG', '12 s', generateWorkflowDemoResult([{ agent: 'CTG Monitor', type: 'sequential' }, { agent: 'HITL Checkpoint', type: 'hitl' }, { agent: 'Clinical Narrative', type: 'sequential' }])),
-  makeHistoryEntry('H2', '2026-02-18 13:15', 'P-2024-0845', 'Pipeline standard', '45 s', generateWorkflowDemoResult([{ agent: 'CTG Monitor', type: 'parallel' }, { agent: 'Bishop Partogram', type: 'parallel' }, { agent: 'RCIU Risk', type: 'parallel' }, { agent: 'HITL Checkpoint', type: 'hitl' }, { agent: 'Symbolic Reasoning', type: 'sequential' }, { agent: 'Clinical Narrative', type: 'sequential' }])),
-  makeHistoryEntry('H3', '2026-02-17 16:00', 'P-2024-0841', 'Evaluation postnatale', '8 s', generateWorkflowDemoResult([{ agent: 'Apgar Transition', type: 'sequential' }, { agent: 'Mother-Baby Risk', type: 'sequential' }, { agent: 'Clinical Narrative', type: 'sequential' }])),
-];
 
 function ResultBlock({ result, compact }: { result: WorkflowRunResult; compact?: boolean }) {
   const rows = result.steps.flatMap((s) =>
@@ -129,6 +124,21 @@ function ResultBlock({ result, compact }: { result: WorkflowRunResult; compact?:
           </div>
         </div>
       )}
+      {result.steps.some((s) => s.result?.patientData?.length) && (
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Données patiente</p>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {result.steps.filter((s) => s.result?.patientData?.length).map((s, i) => (
+              <div key={i} className="rounded-lg border border-slate-100 bg-slate-50/50 p-3">
+                <p className="text-xs font-medium text-slate-800 mb-1">{s.agent}</p>
+                {s.result!.patientData.map((d, j) => (
+                  <p key={j} className="text-xs text-slate-600"><span className="font-medium">{d.field}:</span> {d.value}</p>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="flex flex-wrap gap-2">
         {result.steps.map((s, i) => (
           <span key={i} className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${s.status === 'success' ? 'bg-green-100 text-green-800' : s.status === 'hitl' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}`}>
@@ -151,9 +161,11 @@ function ResultBlock({ result, compact }: { result: WorkflowRunResult; compact?:
 }
 
 export default function WorkflowsPage() {
-  const [selectedTemplate, setSelectedTemplate] = useState<WorkflowStep[] | null>(null);
+  const [selectedPatient, setSelectedPatient] = useState<PatientOption | null>(null);
   const [runResult, setRunResult] = useState<WorkflowRunResult | null>(null);
+  const [runWorkflowName, setRunWorkflowName] = useState<string | null>(null);
   const [historyView, setHistoryView] = useState<HistoryEntry | null>(null);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
   const resultsPanelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -162,23 +174,61 @@ export default function WorkflowsPage() {
     }
   }, [runResult]);
 
-  function handleRun(steps: WorkflowStep[]) {
-    const result = generateWorkflowDemoResult(steps.map((s) => ({ agent: s.agent, type: s.type })));
+  function executeWorkflow(steps: WorkflowStep[], workflowName: string) {
+    if (!selectedPatient) return;
+    const pc = toPatientContext(selectedPatient);
+    const t0 = Date.now();
+    const result = generateWorkflowDemoResult(steps.map((s) => ({ agent: s.agent, type: s.type })), pc);
+    const elapsed = Date.now() - t0;
     setRunResult(result);
+    setRunWorkflowName(workflowName);
+    setHistory((prev) => [
+      {
+        id: `H-${Date.now()}`,
+        date: new Date().toISOString().replace('T', ' ').slice(0, 16),
+        patient: selectedPatient.id,
+        workflow: workflowName,
+        status: 'Termine',
+        duration: `${elapsed < 1000 ? elapsed + ' ms' : (elapsed / 1000).toFixed(1) + ' s'}`,
+        result,
+      },
+      ...prev,
+    ]);
   }
 
-  function handleExecuteTemplate(steps: WorkflowStep[]) {
-    const result = generateWorkflowDemoResult(steps.map((s) => ({ agent: s.agent, type: s.type })));
-    setRunResult(result);
+  function handleRun(steps: WorkflowStep[]) {
+    executeWorkflow(steps, 'Personnalisé');
   }
+
+  function handleExecuteTemplate(steps: WorkflowStep[], name: string) {
+    executeWorkflow(steps, name);
+  }
+
+  function handleUseTemplate(steps: WorkflowStep[]) {
+    executeWorkflow(steps, TEMPLATES.find((t) => t.steps === steps)?.name ?? 'Template');
+  }
+
+  const noPatient = !selectedPatient;
 
   return (
     <div className="space-y-8">
       <PageBanner src="/images/anesthesia.png" alt="Bloc opératoire" title="Orchestration des workflows" subtitle="Templates prédéfinis et constructeur de workflow personnalisé" />
       <div>
         <h1 className="text-xl font-bold text-slate-900">Orchestration des workflows</h1>
-        <p className="text-sm text-slate-500">Templates predefinis et constructeur de workflow personnalise.</p>
+        <p className="text-sm text-slate-500">Sélectionnez une patiente puis exécutez un workflow. Les résultats sont liés au dossier patiente.</p>
       </div>
+
+      <PatientSelector
+        selected={selectedPatient}
+        onSelect={(p) => setSelectedPatient(selectedPatient?.id === p.id ? null : p)}
+        label="Patiente pour l'exécution du workflow"
+      />
+
+      {noPatient && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          Sélectionnez une patiente ci-dessus avant de lancer un workflow.
+        </div>
+      )}
 
       <section>
         <h2 className="text-base font-semibold text-slate-900 mb-3">Templates</h2>
@@ -189,25 +239,26 @@ export default function WorkflowsPage() {
               name={t.name}
               description={t.description}
               steps={t.steps}
-              onSelect={() => setSelectedTemplate(t.steps)}
-              onExecute={handleExecuteTemplate}
+              onSelect={() => handleUseTemplate(t.steps)}
+              onExecute={(steps) => handleExecuteTemplate(steps, t.name)}
+              disabled={noPatient}
             />
           ))}
         </div>
       </section>
 
       <section>
-        <h2 className="text-base font-semibold text-slate-900 mb-3">Workflow personnalise</h2>
-        <p className="text-sm text-slate-500 mb-4">Cliquez sur &quot;Lancer le workflow&quot; ou &quot;Exécuter&quot; sur un template. Les resultats de l&apos;execution s&apos;affichent dans le panneau ci-dessous (scroll automatique).</p>
-        <WorkflowBuilder onRun={handleRun} />
+        <h2 className="text-base font-semibold text-slate-900 mb-3">Workflow personnalisé</h2>
+        <p className="text-sm text-slate-500 mb-4">Construisez un pipeline personnalisé puis cliquez &quot;Lancer le workflow&quot;.</p>
+        <WorkflowBuilder onRun={handleRun} disabled={noPatient} />
         <div id="workflow-results" ref={resultsPanelRef} className="scroll-mt-8">
           {runResult && (
             <div className="mt-6 rounded-xl border-2 border-green-200 bg-green-50/30 p-6 shadow-sm">
               <h3 className="text-base font-semibold text-slate-900 mb-1 flex items-center gap-2">
                 <span className="inline-flex h-2 w-2 rounded-full bg-green-500" />
-                Resultats de l&apos;execution
+                Résultats — {runWorkflowName} — {selectedPatient?.prenom} {selectedPatient?.nom}
               </h3>
-              <p className="text-xs text-slate-500 mb-4">Synthese multi-agents et metriques par etape.</p>
+              <p className="text-xs text-slate-500 mb-4">Exécution sur les données de {selectedPatient?.id ?? '—'} ({selectedPatient?.sa ?? '—'} SA)</p>
               <ResultBlock result={runResult} />
             </div>
           )}
@@ -215,41 +266,46 @@ export default function WorkflowsPage() {
       </section>
 
       <section>
-        <h2 className="text-base font-semibold text-slate-900 mb-3">Historique des executions</h2>
-        <div className="card overflow-hidden !p-0">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50">
-                <th className="px-4 py-3 text-left font-medium text-slate-500">Date</th>
-                <th className="px-4 py-3 text-left font-medium text-slate-500">Patient</th>
-                <th className="px-4 py-3 text-left font-medium text-slate-500">Workflow</th>
-                <th className="px-4 py-3 text-left font-medium text-slate-500">Statut</th>
-                <th className="px-4 py-3 text-left font-medium text-slate-500">Duree</th>
-                <th className="px-4 py-3 text-left font-medium text-slate-500">Detail</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {MOCK_HISTORY.map((h) => (
-                <tr key={h.id}>
-                  <td className="px-4 py-3 text-slate-600">{h.date}</td>
-                  <td className="px-4 py-3 text-slate-700">{h.patient}</td>
-                  <td className="px-4 py-3 text-slate-700">{h.workflow}</td>
-                  <td className="px-4 py-3"><span className="badge-ok">{h.status}</span></td>
-                  <td className="px-4 py-3 text-slate-600">{h.duration}</td>
-                  <td className="px-4 py-3">
-                    <button type="button" onClick={() => setHistoryView(h)} className="text-blue-600 hover:underline text-xs">Voir</button>
-                  </td>
+        <h2 className="text-base font-semibold text-slate-900 mb-3">Historique des exécutions</h2>
+        {history.length === 0 && (
+          <p className="text-sm text-slate-500 py-4">Aucune exécution dans cette session. Sélectionnez une patiente et lancez un workflow.</p>
+        )}
+        {history.length > 0 && (
+          <div className="card overflow-hidden !p-0">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50">
+                  <th className="px-4 py-3 text-left font-medium text-slate-500">Date</th>
+                  <th className="px-4 py-3 text-left font-medium text-slate-500">Patient</th>
+                  <th className="px-4 py-3 text-left font-medium text-slate-500">Workflow</th>
+                  <th className="px-4 py-3 text-left font-medium text-slate-500">Statut</th>
+                  <th className="px-4 py-3 text-left font-medium text-slate-500">Durée</th>
+                  <th className="px-4 py-3 text-left font-medium text-slate-500">Détail</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {history.map((h) => (
+                  <tr key={h.id}>
+                    <td className="px-4 py-3 text-slate-600">{h.date}</td>
+                    <td className="px-4 py-3 text-slate-700">{h.patient}</td>
+                    <td className="px-4 py-3 text-slate-700">{h.workflow}</td>
+                    <td className="px-4 py-3"><span className="badge-ok">{h.status}</span></td>
+                    <td className="px-4 py-3 text-slate-600">{h.duration}</td>
+                    <td className="px-4 py-3">
+                      <button type="button" onClick={() => setHistoryView(h)} className="text-blue-600 hover:underline text-xs">Voir</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
 
       <ActionModal
         isOpen={!!historyView}
         onClose={() => setHistoryView(null)}
-        title={historyView ? `${historyView.workflow} — ${historyView.date}` : ''}
+        title={historyView ? `${historyView.workflow} — ${historyView.patient} — ${historyView.date}` : ''}
         size="xl"
         actions={<button type="button" onClick={() => setHistoryView(null)} className="btn-primary">Fermer</button>}
       >
