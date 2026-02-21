@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import ActionModal from '@/components/ui/ActionModal';
 import BadgeAction from '@/components/ui/BadgeAction';
@@ -137,8 +137,17 @@ type AgentInfo = typeof AGENTS[number];
 type AgentStatus = 'up' | 'down' | 'loading' | 'demo';
 interface AgentLiveStatus { status: AgentStatus; latencyMs?: number; demoResult?: AgentDemoResult }
 
+interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+}
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [systemHealthModalOpen, setSystemHealthModalOpen] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<AgentInfo | null>(null);
   const [agentLive, setAgentLive] = useState<AgentLiveStatus>({ status: 'loading' });
@@ -146,6 +155,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [sidebarStatuses, setSidebarStatuses] = useState<Record<number, AgentStatus>>(
     Object.fromEntries(AGENTS.map((a) => [a.port, 'loading']))
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/auth/me')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: AuthUser | null) => {
+        if (!cancelled && data) setUser(data);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    router.replace('/');
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -361,9 +386,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
               </svg>
             </Link>
-            <div className="h-8 w-8 flex items-center justify-center rounded-full bg-blue-100 text-sm font-medium text-blue-700">
-              Dr
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-slate-700">{user?.name ?? '…'}</span>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">{user?.role ?? '—'}</span>
             </div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            >
+              Déconnexion
+            </button>
           </div>
         </header>
 

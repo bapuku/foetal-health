@@ -90,7 +90,7 @@ export default function LandingPage() {
               Assistant IA
             </button>
             <Link
-              href="/dashboard"
+              href="/login"
               className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700"
             >
               Accéder à la plateforme
@@ -136,7 +136,7 @@ export default function LandingPage() {
             transition={{ duration: 0.5, delay: 0.2 }}
           >
             <Link
-              href="/dashboard"
+              href="/login"
               className="rounded-lg bg-blue-600 px-6 py-3 text-base font-medium text-white shadow-lg transition-colors hover:bg-blue-700"
             >
               Découvrir la plateforme
@@ -299,7 +299,7 @@ export default function LandingPage() {
             <div className="lg:order-1">
               <h2 className="text-3xl font-bold text-slate-900">Technologie</h2>
               <p className="mt-4 text-slate-600">
-                Architecture multi-agents (10 microservices spécialisés), LLM Router (Claude, Mistral, Granite, GPT-4o), client FHIR R4, chaîne d’audit SHA-256 (conservation 10 ans), Human-in-the-Loop pour CTG pathologique et Apgar bas. Explicabilité (SHAP, GradCAM) et références aux guidelines HAS, FIGO, CNGOF.
+                Architecture multi-agents orchestrant 10 microservices cliniques spécialisés, moteur d&apos;intelligence augmentée avec routage adaptatif multi-modèles, interopérabilité FHIR R4 native, chaîne d&apos;audit immuable SHA-256 (conservation 10 ans), boucle de validation humaine (HITL) pour les cas critiques. Explicabilité intégrée et conformité aux guidelines HAS, FIGO et CNGOF.
               </p>
             </div>
           </div>
@@ -310,7 +310,7 @@ export default function LandingPage() {
       <section className="border-t border-slate-200 bg-white py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid gap-8 md:grid-cols-2">
-            <Link href="/dashboard" className="group relative block h-64 overflow-hidden rounded-2xl">
+            <Link href="/login" className="group relative block h-64 overflow-hidden rounded-2xl">
               <Image src="/images/delivery-room.png" alt="Salle d'accouchement" fill className="object-cover transition-transform group-hover:scale-105" sizes="50vw" />
               <div className="absolute inset-0 flex items-center justify-center bg-slate-900/50 transition-colors group-hover:bg-slate-900/60">
                 <span className="rounded-lg bg-white px-6 py-3 font-medium text-slate-900 shadow-lg transition-transform group-hover:scale-105">
@@ -388,7 +388,7 @@ export default function LandingPage() {
             <div>
               <p className="font-semibold text-white">Liens</p>
               <ul className="mt-2 space-y-1 text-sm">
-                <li><Link href="/dashboard" className="hover:text-white">Plateforme</Link></li>
+                <li><Link href="/login" className="hover:text-white">Plateforme</Link></li>
                 <li><a href="#capacites" className="hover:text-white">Fonctionnalités</a></li>
                 <li><a href="#conformite" className="hover:text-white">Conformité</a></li>
               </ul>

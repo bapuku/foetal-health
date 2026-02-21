@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react';
 import PageBanner from '@/components/ui/PageBanner';
 
-type TabId = 'observability' | 'connections' | 'alerts';
+type TabId = 'observability' | 'connections' | 'alerts' | 'users';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'observability', label: 'Observabilité' },
   { id: 'connections', label: 'Connexions APIs hôpital' },
   { id: 'alerts', label: 'Alertes (SMS, email, WhatsApp)' },
+  { id: 'users', label: 'Gestion des utilisateurs' },
 ];
 
 interface ObservabilityData {
@@ -32,11 +33,21 @@ interface AlertConfig {
   recipients: { type: string; email?: string; phone?: string }[];
 }
 
+export interface UserPublic {
+  id: string;
+  email: string;
+  name: string;
+  role: 'admin' | 'clinician' | 'readonly';
+  totp_enabled: boolean;
+  created_at: string;
+}
+
 export default function AdminPage() {
   const [tab, setTab] = useState<TabId>('observability');
   const [observability, setObservability] = useState<ObservabilityData | null>(null);
   const [connections, setConnections] = useState<ConnectionConfig | null>(null);
   const [alertConfig, setAlertConfig] = useState<AlertConfig | null>(null);
+  const [users, setUsers] = useState<UserPublic[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testChannel, setTestChannel] = useState<'email' | 'sms' | 'whatsapp' | null>(null);
@@ -48,10 +59,12 @@ export default function AdminPage() {
       fetch('/api/admin/observability').then((r) => (r.ok ? r.json() : null)),
       fetch('/api/admin/connections').then((r) => (r.ok ? r.json() : null)),
       fetch('/api/admin/alert-config').then((r) => (r.ok ? r.json() : null)),
-    ]).then(([obs, conn, alert]) => {
+      fetch('/api/admin/users').then((r) => (r.ok ? r.json() : [])),
+    ]).then(([obs, conn, alert, userList]) => {
       setObservability(obs ?? null);
       setConnections(conn ?? null);
       setAlertConfig(alert ?? null);
+      setUsers(Array.isArray(userList) ? userList : []);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
@@ -146,6 +159,9 @@ export default function AdminPage() {
           testResult={testResult}
           onSendTest={sendTestAlert}
         />
+      )}
+      {!loading && tab === 'users' && (
+        <UsersTab users={users} onRefresh={() => fetch('/api/admin/users').then((r) => r.ok && r.json()).then((list) => list && setUsers(Array.isArray(list) ? list : []))} />
       )}
     </div>
   );
@@ -589,6 +605,270 @@ function AlertsTab({
       >
         {saving ? 'Enregistrement…' : 'Enregistrer la configuration des alertes'}
       </button>
+    </div>
+  );
+}
+
+function UsersTab({ users, onRefresh }: { users: UserPublic[]; onRefresh: () => void }) {
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editUser, setEditUser] = useState<UserPublic | null>(null);
+  const [twoFaUser, setTwoFaUser] = useState<{ user: UserPublic; qrDataUrl?: string } | null>(null);
+  const [deleteUser, setDeleteUser] = useState<UserPublic | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const adminCount = users.filter((u) => u.role === 'admin').length;
+
+  type CreateRole = 'admin' | 'clinician' | 'readonly';
+  const createForm: { name: string; email: string; role: CreateRole; password: string } = { name: '', email: '', role: 'clinician', password: '' };
+  const [createState, setCreateState] = useState(createForm);
+  type Role = 'admin' | 'clinician' | 'readonly';
+  const editForm: { name: string; role: Role; password: string } = { name: '', role: 'clinician', password: '' };
+  const [editState, setEditState] = useState(editForm);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSaving(true);
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(createState),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || 'Erreur');
+        return;
+      }
+      setCreateOpen(false);
+      setCreateState(createForm);
+      onRefresh();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const openEdit = (u: UserPublic) => {
+    setEditUser(u);
+    setEditState({ name: u.name, role: u.role, password: '' });
+    setError('');
+  };
+
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editUser) return;
+    setError('');
+    setSaving(true);
+    try {
+      const body: { name: string; role: string; password?: string } = { name: editState.name, role: editState.role };
+      if (editState.password) body.password = editState.password;
+      const res = await fetch(`/api/admin/users/${editUser.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || 'Erreur');
+        return;
+      }
+      setEditUser(null);
+      onRefresh();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const open2FA = async (u: UserPublic) => {
+    setError('');
+    setTwoFaUser({ user: u });
+    try {
+      const res = await fetch(`/api/admin/users/${u.id}/2fa`, { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.qrDataUrl) setTwoFaUser({ user: u, qrDataUrl: data.qrDataUrl });
+      else setError(data.error || 'Erreur');
+    } catch {
+      setError('Erreur réseau');
+    }
+  };
+
+  const disable2FA = async (u: UserPublic) => {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/users/${u.id}/2fa`, { method: 'DELETE' });
+      if (res.ok) onRefresh();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteUser) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/admin/users/${deleteUser.id}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setDeleteUser(null);
+        onRefresh();
+      } else setError(data.error || 'Erreur');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-sm font-semibold text-slate-700">Utilisateurs</h2>
+        <button
+          type="button"
+          onClick={() => { setCreateOpen(true); setError(''); setCreateState(createForm); }}
+          className="btn-primary"
+        >
+          Ajouter un utilisateur
+        </button>
+      </div>
+      <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-slate-200 bg-slate-50 text-left text-slate-600">
+              <th className="px-4 py-2">Nom</th>
+              <th className="px-4 py-2">Email</th>
+              <th className="px-4 py-2">Rôle</th>
+              <th className="px-4 py-2">2FA</th>
+              <th className="px-4 py-2">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map((u) => (
+              <tr key={u.id} className="border-b border-slate-100">
+                <td className="px-4 py-2 font-medium">{u.name}</td>
+                <td className="px-4 py-2">{u.email}</td>
+                <td className="px-4 py-2">{u.role}</td>
+                <td className="px-4 py-2">{u.totp_enabled ? <span className="badge-ok">Activé</span> : <span className="text-slate-500">Désactivé</span>}</td>
+                <td className="px-4 py-2 flex flex-wrap gap-1">
+                  <button type="button" onClick={() => openEdit(u)} className="text-blue-600 hover:underline text-xs">Modifier</button>
+                  {u.totp_enabled ? (
+                    <button type="button" onClick={() => disable2FA(u)} disabled={saving} className="text-amber-600 hover:underline text-xs">Désactiver 2FA</button>
+                  ) : (
+                    <button type="button" onClick={() => open2FA(u)} className="text-blue-600 hover:underline text-xs">Activer 2FA</button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setDeleteUser(u)}
+                    disabled={u.role === 'admin' && adminCount <= 1}
+                    className="text-red-600 hover:underline text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={u.role === 'admin' && adminCount <= 1 ? 'Impossible de supprimer le dernier administrateur' : undefined}
+                  >
+                    Supprimer
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {createOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => !saving && setCreateOpen(false)}>
+          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-slate-900">Ajouter un utilisateur</h3>
+            {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+            <form onSubmit={handleCreate} className="mt-4 space-y-3">
+              <div>
+                <label className="block text-xs text-slate-500">Nom</label>
+                <input className="input-field w-full" value={createState.name} onChange={(e) => setCreateState((s) => ({ ...s, name: e.target.value }))} placeholder="Nom affiché" />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-500">Email</label>
+                <input type="email" className="input-field w-full" value={createState.email} onChange={(e) => setCreateState((s) => ({ ...s, email: e.target.value }))} placeholder="email@exemple.fr" required />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-500">Rôle</label>
+                <select className="input-field w-full" value={createState.role} onChange={(e) => setCreateState((s) => ({ ...s, role: e.target.value as 'admin' | 'clinician' | 'readonly' }))}>
+                  <option value="admin">Administrateur</option>
+                  <option value="clinician">Clinician</option>
+                  <option value="readonly">Lecture seule</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-slate-500">Mot de passe</label>
+                <input type="password" className="input-field w-full" value={createState.password} onChange={(e) => setCreateState((s) => ({ ...s, password: e.target.value }))} placeholder="••••••••" required />
+              </div>
+              <div className="flex gap-2 justify-end pt-2">
+                <button type="button" onClick={() => setCreateOpen(false)} className="btn-secondary">Annuler</button>
+                <button type="submit" disabled={saving} className="btn-primary">{saving ? 'Création…' : 'Créer'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {editUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => !saving && setEditUser(null)}>
+          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-slate-900">Modifier {editUser.email}</h3>
+            {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+            <form onSubmit={handleEdit} className="mt-4 space-y-3">
+              <div>
+                <label className="block text-xs text-slate-500">Nom</label>
+                <input className="input-field w-full" value={editState.name} onChange={(e) => setEditState((s) => ({ ...s, name: e.target.value }))} placeholder="Nom affiché" />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-500">Rôle</label>
+                <select className="input-field w-full" value={editState.role} onChange={(e) => setEditState((s) => ({ ...s, role: e.target.value as 'admin' | 'clinician' | 'readonly' }))}>
+                  <option value="admin">Administrateur</option>
+                  <option value="clinician">Clinician</option>
+                  <option value="readonly">Lecture seule</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-slate-500">Nouveau mot de passe (laisser vide pour ne pas changer)</label>
+                <input type="password" className="input-field w-full" value={editState.password} onChange={(e) => setEditState((s) => ({ ...s, password: e.target.value }))} placeholder="••••••••" />
+              </div>
+              <div className="flex gap-2 justify-end pt-2">
+                <button type="button" onClick={() => setEditUser(null)} className="btn-secondary">Annuler</button>
+                <button type="submit" disabled={saving} className="btn-primary">{saving ? 'Enregistrement…' : 'Enregistrer'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {twoFaUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setTwoFaUser(null)}>
+          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-slate-900">2FA pour {twoFaUser.user.email}</h3>
+            {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+            {twoFaUser.qrDataUrl ? (
+              <div className="mt-4">
+                <p className="text-sm text-slate-600 mb-2">Scannez ce QR code avec Google Authenticator ou Authy.</p>
+                <img src={twoFaUser.qrDataUrl} alt="QR Code 2FA" className="mx-auto w-48 h-48" />
+              </div>
+            ) : (
+              <p className="mt-4 text-sm text-slate-500">Chargement du QR code…</p>
+            )}
+            <div className="flex justify-end pt-4">
+              <button type="button" onClick={() => setTwoFaUser(null)} className="btn-secondary">Fermer</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => !saving && setDeleteUser(null)}>
+          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-slate-900">Supprimer l&apos;utilisateur</h3>
+            <p className="mt-2 text-sm text-slate-600">Supprimer {deleteUser.email} ? Cette action est irréversible.</p>
+            {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+            <div className="flex gap-2 justify-end pt-4">
+              <button type="button" onClick={() => setDeleteUser(null)} className="btn-secondary">Annuler</button>
+              <button type="button" onClick={handleDelete} disabled={saving} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50">Supprimer</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
