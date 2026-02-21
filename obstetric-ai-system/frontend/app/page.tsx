@@ -84,7 +84,7 @@ export default function LandingPage() {
             <span className="text-slate-400">|</span>
             <span className="font-semibold text-blue-600">Obstetric AI</span>
           </Link>
-          <nav className="hidden items-center gap-8 md:flex">
+          <nav className="hidden items-center gap-4 lg:gap-6 md:flex">
             <a href="#capacites" className="text-sm font-medium text-slate-600 hover:text-blue-600">Fonctionnalités</a>
             <a href="#conformite" className="text-sm font-medium text-slate-600 hover:text-blue-600">Conformité</a>
             <a href="#technologie" className="text-sm font-medium text-slate-600 hover:text-blue-600">Technologie</a>
@@ -102,18 +102,18 @@ export default function LandingPage() {
             {user ? (
               <Link
                 href="/dashboard"
-                className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700"
+                className="flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700"
               >
-                <span className="h-6 w-6 flex items-center justify-center rounded-full bg-white/20 text-xs font-bold">{user.name.charAt(0).toUpperCase()}</span>
-                {user.name}
-                <span className="rounded bg-white/20 px-1.5 py-0.5 text-xs">{user.role}</span>
+                <span className="h-5 w-5 flex items-center justify-center rounded-full bg-white/20 text-[10px] font-bold leading-none">{user.name.charAt(0).toUpperCase()}</span>
+                <span className="max-w-[120px] truncate">{user.name}</span>
+                <span className="rounded bg-white/20 px-1 py-0.5 text-[10px]">{user.role}</span>
               </Link>
             ) : (
               <Link
                 href="/login"
                 className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700"
               >
-                Accéder à la plateforme
+                Accéder
               </Link>
             )}
           </nav>
