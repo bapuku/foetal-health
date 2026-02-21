@@ -79,12 +79,12 @@ export default function LandingPage() {
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-slate-200/80 bg-white/95 backdrop-blur-sm">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2 shrink-0">
             <span className="text-lg font-bold text-slate-900">SOVEREIGNPIALPHA</span>
             <span className="text-slate-400">|</span>
             <span className="font-semibold text-blue-600">Obstetric AI</span>
           </Link>
-          <nav className="hidden items-center gap-4 lg:gap-6 md:flex">
+          <nav className="hidden items-center gap-3 lg:gap-5 lg:flex">
             <a href="#capacites" className="text-sm font-medium text-slate-600 hover:text-blue-600">Fonctionnalités</a>
             <a href="#conformite" className="text-sm font-medium text-slate-600 hover:text-blue-600">Conformité</a>
             <a href="#technologie" className="text-sm font-medium text-slate-600 hover:text-blue-600">Technologie</a>
