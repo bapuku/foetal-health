@@ -84,7 +84,7 @@ export default function LandingPage() {
             <span className="text-slate-400">|</span>
             <span className="font-semibold text-blue-600">Obstetric AI</span>
           </Link>
-          <nav className="hidden items-center gap-3 lg:gap-5 lg:flex">
+          <nav className="hidden items-center gap-3 md:flex">
             <a href="#capacites" className="text-sm font-medium text-slate-600 hover:text-blue-600">Fonctionnalités</a>
             <a href="#conformite" className="text-sm font-medium text-slate-600 hover:text-blue-600">Conformité</a>
             <a href="#technologie" className="text-sm font-medium text-slate-600 hover:text-blue-600">Technologie</a>
@@ -92,28 +92,27 @@ export default function LandingPage() {
             <button
               type="button"
               onClick={() => setAssistantOpen((o) => !o)}
-              className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-100"
+              className="flex items-center justify-center rounded-lg border border-blue-200 bg-blue-50 p-2 text-blue-700 transition-colors hover:bg-blue-100"
+              title="Assistant IA"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
               </svg>
-              Assistant IA
             </button>
             {user ? (
               <Link
                 href="/dashboard"
-                className="flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700"
+                className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 whitespace-nowrap"
               >
-                <span className="h-5 w-5 flex items-center justify-center rounded-full bg-white/20 text-[10px] font-bold leading-none">{user.name.charAt(0).toUpperCase()}</span>
-                <span className="max-w-[120px] truncate">{user.name}</span>
+                {user.name}
                 <span className="rounded bg-white/20 px-1 py-0.5 text-[10px]">{user.role}</span>
               </Link>
             ) : (
               <Link
                 href="/login"
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700"
+                className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 whitespace-nowrap"
               >
-                Accéder
+                Accéder à la plateforme
               </Link>
             )}
           </nav>
