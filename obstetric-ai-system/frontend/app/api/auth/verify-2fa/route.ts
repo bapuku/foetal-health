@@ -4,17 +4,10 @@ import {
   verifyTOTP,
   createSessionToken,
   COOKIE_NAME_AUTH,
+  SESSION_COOKIE_OPTIONS,
 } from '@/lib/auth-server';
 
 export const dynamic = 'force-dynamic';
-
-const cookieOptions = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax' as const,
-  path: '/',
-  maxAge: 24 * 60 * 60,
-};
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,7 +27,7 @@ export async function POST(request: NextRequest) {
     }
     const token = await createSessionToken(user.id, user.role);
     const res = NextResponse.json({ ok: true });
-    res.cookies.set(COOKIE_NAME_AUTH, token, cookieOptions);
+    res.cookies.set(COOKIE_NAME_AUTH, token, SESSION_COOKIE_OPTIONS);
     return res;
   } catch (e) {
     console.error('Verify 2FA error', e);

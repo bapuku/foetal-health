@@ -102,6 +102,14 @@ export async function verifySessionToken(token: string): Promise<SessionPayload 
 
 export const COOKIE_NAME_AUTH = COOKIE_NAME;
 
+export const SESSION_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.COOKIE_SECURE === 'true',
+  sameSite: 'lax' as const,
+  path: '/',
+  maxAge: 24 * 60 * 60,
+};
+
 export async function getUsers(): Promise<UserRecord[]> {
   const list = await readJsonFile<UserRecord[]>(USERS_FILE);
   if (!list || !Array.isArray(list)) return [];
