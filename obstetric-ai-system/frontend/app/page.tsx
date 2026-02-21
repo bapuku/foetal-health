@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
@@ -61,8 +61,18 @@ const COMPLIANCE_BADGES = [
   'RGPD',
 ];
 
+interface AuthUser { name: string; role: string }
+
 export default function LandingPage() {
   const [assistantOpen, setAssistantOpen] = useState(false);
+  const [user, setUser] = useState<AuthUser | null>(null);
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => { if (data?.name) setUser(data); })
+      .catch(() => {});
+  }, []);
 
   return (
     <div className="min-h-screen">
@@ -89,12 +99,23 @@ export default function LandingPage() {
               </svg>
               Assistant IA
             </button>
-            <Link
-              href="/login"
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700"
-            >
-              Accéder à la plateforme
-            </Link>
+            {user ? (
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700"
+              >
+                <span className="h-6 w-6 flex items-center justify-center rounded-full bg-white/20 text-xs font-bold">{user.name.charAt(0).toUpperCase()}</span>
+                {user.name}
+                <span className="rounded bg-white/20 px-1.5 py-0.5 text-xs">{user.role}</span>
+              </Link>
+            ) : (
+              <Link
+                href="/login"
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700"
+              >
+                Accéder à la plateforme
+              </Link>
+            )}
           </nav>
         </div>
       </header>
