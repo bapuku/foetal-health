@@ -20,11 +20,13 @@ export default function CTGAnalysisForm({ patientId, patientLabel, patientSa }: 
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<CTGOutput | null>(null);
   const [classificationModalOpen, setClassificationModalOpen] = useState(false);
+  const [saveToDossierMessage, setSaveToDossierMessage] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setResult(null);
+    setSaveToDossierMessage(null);
     setLoading(true);
     try {
       const out = await analyzeCTG({
@@ -34,6 +36,25 @@ export default function CTGAnalysisForm({ patientId, patientLabel, patientSa }: 
         decelerations_severe: decelSevere,
       });
       setResult(out);
+      if (patientId && patientLabel) {
+        const classification = (out.classification ?? 'Normal').toLowerCase();
+        const body = {
+          date: new Date().toISOString().slice(0, 10),
+          baselineBpm,
+          stvMs,
+          classification: classification === 'normal' || classification === 'suspect' || classification === 'pathologique' ? classification : 'normal',
+          narrative: out.narrative ?? '',
+        };
+        const res = await fetch(`/api/dossiers/${patientId}/ctg`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (res.ok) {
+          setSaveToDossierMessage(`Resultat sauvegarde dans le dossier de ${patientLabel}`);
+          setTimeout(() => setSaveToDossierMessage(null), 5000);
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur reseau - verifiez que le backend CTG est lance (port 8000)');
     } finally {
@@ -123,6 +144,11 @@ export default function CTGAnalysisForm({ patientId, patientLabel, patientSa }: 
         </div>
       )}
 
+      {saveToDossierMessage && (
+        <div className="mt-4 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+          {saveToDossierMessage}
+        </div>
+      )}
       {result && (
         <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
           {patientId && (

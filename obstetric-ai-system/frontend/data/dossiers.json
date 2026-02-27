@@ -1,0 +1,119 @@
+{
+  "P-2024-0847": {
+    "patientId": "P-2024-0847",
+    "calendar": { "items": [] },
+    "consultations": [
+      { "id": "c-0847-1", "date": "2025-06-15", "sa": 12, "consultationNumber": 1, "paSystolique": 118, "paDiastolique": 72, "poids": 62, "bcfBpm": 165, "proteinurieBandelette": "négatif", "resumeClinique": "Première consultation, grossesse bien accueillie, examen clinique sans particularité." },
+      { "id": "c-0847-2", "date": "2025-08-10", "sa": 20, "consultationNumber": 2, "paSystolique": 115, "paDiastolique": 70, "poids": 65, "hauteurUterine": 20, "bcfBpm": 148, "proteinurieBandelette": "négatif", "resumeClinique": "Consultation du 5e mois, morphologique prévue à 22 SA." },
+      { "id": "c-0847-3", "date": "2026-02-18", "sa": 38, "consultationNumber": 6, "paSystolique": 122, "paDiastolique": 78, "poids": 72, "hauteurUterine": 36, "bcfBpm": 142, "proteinurieBandelette": "négatif", "presentationFœtale": "céphalique", "resumeClinique": "Suivi à terme, col favorable, surveillance CTG hebdo." }
+    ],
+    "biologicalExams": [
+      { "id": "b-0847-1", "type": "NFS", "date": "2025-06-12", "trimestre": 1, "resultatNumerique": 12.2, "unite": "g/dL", "valeurMinNormale": 11, "valeurMaxNormale": 14, "statut": "normal", "commentaire": "Hémoglobine correcte T1." },
+      { "id": "b-0847-2", "type": "toxoplasmose", "date": "2025-06-12", "trimestre": 1, "resultatQualitatif": "immunisée", "statut": "normal" },
+      { "id": "b-0847-3", "type": "HGPO 75g", "date": "2025-09-01", "trimestre": 2, "resultatNumerique": 1.2, "unite": "g/L", "statut": "normal", "commentaire": "HGPO à 26 SA, normes IADPSG respectées." }
+    ],
+    "ctgResults": [
+      { "id": "ctg-0847-1", "date": "2026-02-15", "baselineBpm": 138, "stvMs": 12, "classification": "normal", "narrative": "Trace normal FIGO 2015. Variabilité adéquate, accélérations présentes." },
+      { "id": "ctg-0847-2", "date": "2026-02-18", "baselineBpm": 142, "stvMs": 14, "classification": "normal", "narrative": "Contrôle à 38 SA, trace rassurant." }
+    ],
+    "ultrasounds": [
+      { "id": "echo-0847-1", "type": "t1", "data": { "date": "2025-06-20", "sa": 12.5, "lccMm": 62, "clarteNucaleMm": 2.1, "vitalite": true, "nombreEmbryons": 1 } },
+      { "id": "echo-0847-2", "type": "t2", "data": { "date": "2025-09-05", "sa": 22, "bipMm": 54, "perimetreCranienMm": 198, "perimetreAbdominalMm": 178, "longueurFemoraleMm": 40, "morphologieComplete": "normale", "positionPlacenta": "fundique", "liquideAmniotique": "normal" } }
+    ]
+  },
+  "P-2024-0845": {
+    "patientId": "P-2024-0845",
+    "calendar": { "items": [] },
+    "consultations": [
+      { "id": "c-0845-1", "date": "2025-06-20", "sa": 13, "consultationNumber": 1, "paSystolique": 125, "paDiastolique": 80, "poids": 68, "bcfBpm": 162, "resumeClinique": "Première consultation, antécédent HTA légère, surveillance tensionnelle." },
+      { "id": "c-0845-2", "date": "2025-09-15", "sa": 24, "consultationNumber": 3, "paSystolique": 128, "paDiastolique": 82, "poids": 72, "hauteurUterine": 24, "bcfBpm": 150, "resumeClinique": "PA stable sous régime, pas de traitement antihypertenseur." },
+      { "id": "c-0845-3", "date": "2026-02-17", "sa": 36, "consultationNumber": 6, "paSystolique": 130, "paDiastolique": 84, "poids": 78, "hauteurUterine": 34, "bcfBpm": 145, "resumeClinique": "Suivi à 36 SA, PA contrôlée, CTG prévu 2x/semaine." }
+    ],
+    "biologicalExams": [
+      { "id": "b-0845-1", "type": "NFS", "date": "2025-06-18", "trimestre": 1, "resultatNumerique": 11.8, "unite": "g/dL", "statut": "normal" },
+      { "id": "b-0845-2", "type": "glycémie à jeun", "date": "2025-06-18", "trimestre": 1, "resultatNumerique": 0.88, "unite": "g/L", "statut": "normal" },
+      { "id": "b-0845-3", "type": "HGPO 75g", "date": "2025-10-01", "trimestre": 2, "resultatNumerique": 1.65, "unite": "g/L", "statut": "anormal", "commentaire": "H1 au-dessus du seuil IADPSG, DG posé, régime et auto-surveillance." }
+    ],
+    "ctgResults": [
+      { "id": "ctg-0845-1", "date": "2026-02-14", "baselineBpm": 140, "stvMs": 10, "classification": "normal", "narrative": "Trace normal. Patient diabète gestationnel, surveillance adaptée." }
+    ],
+    "ultrasounds": [
+      { "id": "echo-0845-1", "type": "t2", "data": { "date": "2025-09-20", "sa": 23, "bipMm": 56, "perimetreCranienMm": 210, "perimetreAbdominalMm": 192, "longueurFemoraleMm": 42, "morphologieComplete": "normale", "positionPlacenta": "antérieure", "liquideAmniotique": "normal" } }
+    ]
+  },
+  "P-2024-0841": {
+    "patientId": "P-2024-0841",
+    "calendar": { "items": [] },
+    "consultations": [
+      { "id": "c-0841-1", "date": "2025-07-01", "sa": 14, "consultationNumber": 1, "paSystolique": 145, "paDiastolique": 92, "poids": 74, "bcfBpm": 160, "proteinurieBandelette": "négatif", "resumeClinique": "HTA gravidique dès T1, bilan rénal et hépatique demandé." },
+      { "id": "c-0841-2", "date": "2025-10-10", "sa": 28, "consultationNumber": 4, "paSystolique": 142, "paDiastolique": 90, "poids": 78, "hauteurUterine": 28, "bcfBpm": 148, "proteinurieBandelette": "+", "resumeClinique": "HTA + protéinurie, surveillance pré-éclampsie, repos et traitement." },
+      { "id": "c-0841-3", "date": "2026-02-16", "sa": 34, "consultationNumber": 6, "paSystolique": 138, "paDiastolique": 88, "poids": 80, "hauteurUterine": 32, "bcfBpm": 144, "resumeClinique": "Risque élevé, CTG 2x/semaine, Doppler, décision d’accouchement à 37-38 SA." }
+    ],
+    "biologicalExams": [
+      { "id": "b-0841-1", "type": "NFS", "date": "2025-07-01", "trimestre": 1, "resultatNumerique": 12.0, "unite": "g/dL", "statut": "normal" },
+      { "id": "b-0841-2", "type": "créatinine", "date": "2025-10-08", "trimestre": 2, "resultatNumerique": 8.5, "unite": "mg/L", "statut": "normal" },
+      { "id": "b-0841-3", "type": "protéinurie 24h", "date": "2025-10-09", "trimestre": 2, "resultatNumerique": 0.35, "unite": "g/24h", "statut": "anormal", "commentaire": "Seuil pré-éclampsie à surveiller." }
+    ],
+    "ctgResults": [
+      { "id": "ctg-0841-1", "date": "2026-02-12", "baselineBpm": 155, "stvMs": 6, "classification": "suspect", "narrative": "Trace suspect FIGO, variabilité diminuée, surveillance rapprochée." },
+      { "id": "ctg-0841-2", "date": "2026-02-16", "baselineBpm": 148, "stvMs": 8, "classification": "suspect", "narrative": "Amélioration après repos, à recontrôler sous 48h." }
+    ],
+    "ultrasounds": [
+      { "id": "echo-0841-1", "type": "t3", "data": { "date": "2026-02-10", "sa": 34, "poidsEstimeG": 2100, "presentation": "céphalique", "positionPlacenta": "fundique", "liquideAmniotique": "normal", "dopplerArteresUterines": "normal", "dopplerOmbilical": "normal" } }
+    ]
+  },
+  "P-2024-0839": {
+    "patientId": "P-2024-0839",
+    "calendar": { "items": [] },
+    "consultations": [
+      { "id": "c-0839-1", "date": "2025-08-05", "sa": 10, "consultationNumber": 1, "paSystolique": 112, "paDiastolique": 68, "poids": 58, "bcfBpm": 168, "resumeClinique": "Grossesse 2, suivi habituel, datation à confirmer à l’écho T1." },
+      { "id": "c-0839-2", "date": "2025-10-20", "sa": 20, "consultationNumber": 2, "paSystolique": 114, "paDiastolique": 70, "poids": 61, "hauteurUterine": 20, "bcfBpm": 152, "resumeClinique": "Morphologique prévue 22 SA, sérologies à jour." }
+    ],
+    "biologicalExams": [
+      { "id": "b-0839-1", "type": "NFS", "date": "2025-08-03", "trimestre": 1, "resultatNumerique": 12.5, "unite": "g/dL", "statut": "normal" },
+      { "id": "b-0839-2", "type": "rubéole", "date": "2025-08-03", "trimestre": 1, "resultatQualitatif": "immunisée", "statut": "normal" },
+      { "id": "b-0839-3", "type": "toxoplasmose", "date": "2025-08-03", "trimestre": 1, "resultatQualitatif": "non immunisée", "statut": "normal", "commentaire": "Sérologie mensuelle prévue." }
+    ],
+    "ctgResults": [],
+    "ultrasounds": [
+      { "id": "echo-0839-1", "type": "t1", "data": { "date": "2025-08-15", "sa": 11.5, "lccMm": 52, "clarteNucaleMm": 2.0, "vitalite": true, "nombreEmbryons": 1 } }
+    ]
+  },
+  "P-2024-0831": {
+    "patientId": "P-2024-0831",
+    "calendar": { "items": [] },
+    "consultations": [
+      { "id": "c-0831-1", "date": "2025-09-01", "sa": 12, "consultationNumber": 1, "paSystolique": 120, "paDiastolique": 75, "poids": 64, "bcfBpm": 164, "resumeClinique": "Première grossesse, IMC 24, suivi standard." },
+      { "id": "c-0831-2", "date": "2025-11-15", "sa": 22, "consultationNumber": 3, "paSystolique": 118, "paDiastolique": 74, "poids": 68, "hauteurUterine": 22, "bcfBpm": 150, "resumeClinique": "Morpho T2 réalisée, normale." },
+      { "id": "c-0831-3", "date": "2026-02-14", "sa": 30, "consultationNumber": 5, "paSystolique": 122, "paDiastolique": 76, "poids": 74, "hauteurUterine": 30, "bcfBpm": 146, "resumeClinique": "Écho T3 à 32 SA prévue, CTG si clinique." }
+    ],
+    "biologicalExams": [
+      { "id": "b-0831-1", "type": "NFS", "date": "2025-08-28", "trimestre": 1, "resultatNumerique": 11.9, "unite": "g/dL", "statut": "normal" },
+      { "id": "b-0831-2", "type": "HGPO 75g", "date": "2025-11-20", "trimestre": 2, "resultatNumerique": 1.1, "unite": "g/L", "statut": "normal" }
+    ],
+    "ctgResults": [
+      { "id": "ctg-0831-1", "date": "2026-02-14", "baselineBpm": 136, "stvMs": 13, "classification": "normal", "narrative": "Trace normal à 30 SA, contrôle de routine." }
+    ],
+    "ultrasounds": [
+      { "id": "echo-0831-1", "type": "t2", "data": { "date": "2025-11-18", "sa": 22, "bipMm": 53, "perimetreCranienMm": 195, "perimetreAbdominalMm": 180, "longueurFemoraleMm": 39, "morphologieComplete": "normale", "positionPlacenta": "postérieure", "liquideAmniotique": "normal" } }
+    ]
+  },
+  "P-2024-0825": {
+    "patientId": "P-2024-0825",
+    "calendar": { "items": [] },
+    "consultations": [
+      { "id": "c-0825-1", "date": "2025-05-10", "sa": 14, "consultationNumber": 1, "paSystolique": 118, "paDiastolique": 72, "poids": 66, "bcfBpm": 162, "resumeClinique": "Grossesse à bas risque, suivi standard." },
+      { "id": "c-0825-2", "date": "2026-02-05", "sa": 39, "consultationNumber": 7, "paSystolique": 124, "paDiastolique": 78, "poids": 76, "hauteurUterine": 37, "bcfBpm": 140, "presentationFœtale": "céphalique", "resumeClinique": "Dernière consultation avant accouchement, déclenchement prévu à 41 SA si pas de travail." }
+    ],
+    "biologicalExams": [
+      { "id": "b-0825-1", "type": "NFS", "date": "2025-05-08", "trimestre": 1, "resultatNumerique": 12.1, "unite": "g/dL", "statut": "normal" },
+      { "id": "b-0825-2", "type": "streptocoque B", "date": "2026-01-25", "trimestre": 3, "resultatQualitatif": "négatif", "statut": "normal" }
+    ],
+    "ctgResults": [
+      { "id": "ctg-0825-1", "date": "2026-02-10", "baselineBpm": 138, "stvMs": 11, "classification": "normal", "narrative": "Trace normal à 40 SA, patiente accouchée depuis." }
+    ],
+    "ultrasounds": [
+      { "id": "echo-0825-1", "type": "t3", "data": { "date": "2026-01-28", "sa": 36, "poidsEstimeG": 3200, "presentation": "céphalique", "positionPlacenta": "antérieure", "liquideAmniotique": "normal" } }
+    ]
+  }
+}

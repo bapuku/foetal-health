@@ -14,7 +14,7 @@ export async function GET(
   const { patientId } = await params;
   const store = await readJsonFile<DossiersStore>(DOSSIERS_FILE) ?? {};
   const dossier = store[patientId] ?? null;
-  if (!dossier) return NextResponse.json({ patientId, calendar: { items: [] }, consultations: [], biologicalExams: [] });
+  if (!dossier) return NextResponse.json({ patientId, calendar: { items: [] }, consultations: [], biologicalExams: [], ctgResults: [], ultrasounds: [] });
   return NextResponse.json(dossier);
 }
 
