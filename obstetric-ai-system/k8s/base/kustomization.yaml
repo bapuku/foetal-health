@@ -17,5 +17,8 @@ resources:
   - torchserve-ctg.yaml
   - monitoring.yaml
   - evidently-drift-job.yaml
+  - frontend.yaml
+  - agents.yaml
+  - ingress.yaml
 commonLabels:
   app.kubernetes.io/part-of: obstetric-ai

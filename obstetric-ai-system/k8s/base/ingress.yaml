@@ -1,0 +1,53 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: obstetric-ai-ingress
+  namespace: obs-prod
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      add_header X-Frame-Options DENY always;
+      add_header X-Content-Type-Options nosniff always;
+      add_header X-XSS-Protection "1; mode=block" always;
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - obstetric-ai.sovereignpialpha.com
+      secretName: obstetric-ai-tls
+  rules:
+    - host: obstetric-ai.sovereignpialpha.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 3000
+          - path: /api/ctg-monitor
+            pathType: Prefix
+            backend:
+              service:
+                name: ctg-monitor
+                port:
+                  number: 8000
+          - path: /api/apgar-transition
+            pathType: Prefix
+            backend:
+              service:
+                name: apgar-transition
+                port:
+                  number: 8001
+          - path: /api/prenatal-followup
+            pathType: Prefix
+            backend:
+              service:
+                name: prenatal-followup
+                port:
+                  number: 8010
