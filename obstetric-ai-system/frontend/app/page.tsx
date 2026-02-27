@@ -109,7 +109,7 @@ export default function LandingPage() {
               </Link>
             ) : (
               <Link
-                href="/login"
+                href="/dashboard"
                 className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 whitespace-nowrap"
               >
                 Accéder à la plateforme
@@ -156,7 +156,7 @@ export default function LandingPage() {
             transition={{ duration: 0.5, delay: 0.2 }}
           >
             <Link
-              href="/login"
+              href="/dashboard"
               className="rounded-lg bg-blue-600 px-6 py-3 text-base font-medium text-white shadow-lg transition-colors hover:bg-blue-700"
             >
               Découvrir la plateforme
@@ -330,7 +330,7 @@ export default function LandingPage() {
       <section className="border-t border-slate-200 bg-white py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid gap-8 md:grid-cols-2">
-            <Link href="/login" className="group relative block h-64 overflow-hidden rounded-2xl">
+            <Link href="/dashboard" className="group relative block h-64 overflow-hidden rounded-2xl">
               <Image src="/images/delivery-room.png" alt="Salle d'accouchement" fill className="object-cover transition-transform group-hover:scale-105" sizes="50vw" />
               <div className="absolute inset-0 flex items-center justify-center bg-slate-900/50 transition-colors group-hover:bg-slate-900/60">
                 <span className="rounded-lg bg-white px-6 py-3 font-medium text-slate-900 shadow-lg transition-transform group-hover:scale-105">
@@ -408,7 +408,7 @@ export default function LandingPage() {
             <div>
               <p className="font-semibold text-white">Liens</p>
               <ul className="mt-2 space-y-1 text-sm">
-                <li><Link href="/login" className="hover:text-white">Plateforme</Link></li>
+                <li><Link href="/dashboard" className="hover:text-white">Plateforme</Link></li>
                 <li><a href="#capacites" className="hover:text-white">Fonctionnalités</a></li>
                 <li><a href="#conformite" className="hover:text-white">Conformité</a></li>
               </ul>
