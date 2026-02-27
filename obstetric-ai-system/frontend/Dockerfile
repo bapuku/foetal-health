@@ -18,7 +18,14 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/data ./data
-RUN chown -R nextjs:nextjs /app/data
+COPY --from=builder /app/data ./data-seed
+RUN chown -R nextjs:nextjs /app/data /app/data-seed
 EXPOSE 3000
 ENV PORT=3000
-ENTRYPOINT ["/bin/sh", "-c", "chown -R nextjs:nextjs /app/data 2>/dev/null || true; exec su-exec nextjs node server.js"]
+ENTRYPOINT ["/bin/sh", "-c", "\
+  chown -R nextjs:nextjs /app/data 2>/dev/null || true; \
+  for f in /app/data-seed/*.json; do \
+    bn=$(basename \"$f\"); \
+    [ ! -f \"/app/data/$bn\" ] && cp \"$f\" \"/app/data/$bn\" && chown nextjs:nextjs \"/app/data/$bn\"; \
+  done; \
+  exec su-exec nextjs node server.js"]
