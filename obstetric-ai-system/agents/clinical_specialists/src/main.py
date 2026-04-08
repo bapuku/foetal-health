@@ -15,7 +15,16 @@ from typing import Any, Optional
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
-_OBS = Path(__file__).resolve().parents[3]
+def _obstetric_root() -> Path:
+    here = Path(__file__).resolve().parent
+    for d in [here, *here.parents]:
+        if (d / "shared" / "prompt_system").is_dir():
+            return d
+    # Fallback : repo local agents/.../src → racine obstetric-ai-system
+    return here.parents[2]
+
+
+_OBS = _obstetric_root()
 if str(_OBS) not in sys.path:
     sys.path.insert(0, str(_OBS))
 
