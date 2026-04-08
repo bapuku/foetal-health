@@ -19,7 +19,8 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/data ./data
 COPY --from=builder /app/data ./data-seed
-RUN chown -R nextjs:nextjs /app/data /app/data-seed
+# Next.js 15 reads public/ at startup; non-root user must own app tree (not only data/).
+RUN chown -R nextjs:nextjs /app
 EXPOSE 3000
 ENV PORT=3000
 ENTRYPOINT ["/bin/sh", "-c", "\
