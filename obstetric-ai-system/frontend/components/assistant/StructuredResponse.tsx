@@ -9,6 +9,7 @@ export type { StructuredAIResponse } from '@/lib/assistant-types';
 
 interface StructuredResponseProps {
   data: StructuredAIResponse;
+  onFollowUp?: (question: string) => void;
 }
 
 function CollapsibleSection({
@@ -44,7 +45,7 @@ function CollapsibleSection({
   );
 }
 
-export default function StructuredResponse({ data }: StructuredResponseProps) {
+export default function StructuredResponse({ data, onFollowUp }: StructuredResponseProps) {
   return (
     <div className="space-y-3 text-sm">
       <CollapsibleSection title="Résumé diagnostique" defaultOpen={true}>
@@ -192,6 +193,32 @@ export default function StructuredResponse({ data }: StructuredResponseProps) {
               </li>
             ))}
           </ol>
+        </CollapsibleSection>
+      )}
+
+      {data.suggestedQuestions && data.suggestedQuestions.length > 0 && (
+        <CollapsibleSection title="Poursuivre dans ce thème" defaultOpen={true}>
+          <p className="mb-2 text-xs text-slate-500">
+            Suggestions alignées sur le sujet traité ; elles complètent la réponse ci-dessus.
+          </p>
+          <div className="flex flex-col gap-2">
+            {data.suggestedQuestions.map((q, i) =>
+              onFollowUp ? (
+                <button
+                  key={`${i}-${q.slice(0, 24)}`}
+                  type="button"
+                  onClick={() => onFollowUp(q)}
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-xs text-slate-700 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-800"
+                >
+                  {q}
+                </button>
+              ) : (
+                <p key={`${i}-${q.slice(0, 24)}`} className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                  {q}
+                </p>
+              )
+            )}
+          </div>
         </CollapsibleSection>
       )}
     </div>

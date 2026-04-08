@@ -13,4 +13,6 @@ export interface StructuredAIResponse {
   references: HarvardCitation[];
   patientContext?: { field: string; value: string }[];
   triangulation?: TriangulationRow[];
+  /** Questions de suivi dans le même thème (affichées après les sources). */
+  suggestedQuestions?: string[];
 }

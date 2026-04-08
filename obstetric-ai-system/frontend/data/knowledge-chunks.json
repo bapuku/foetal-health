@@ -138,5 +138,215 @@
     "year": 2010,
     "chunk_text": "DG : HGPO 75 g entre 24-28 SA. IADPSG : a jeun >= 0,92 ; H1 >= 1,80 ; H2 >= 1,53 g/L. Une valeur depassee = diagnostic.",
     "metadata": { "type": "guideline" }
+  },
+  {
+    "id": "isshp2014-thg-1",
+    "source": "ISSHP",
+    "source_id": "isshp2014",
+    "title": "Classification des troubles hypertensifs de la grossesse (THG).",
+    "authors": "ISSHP",
+    "year": 2014,
+    "chunk_text": "ISSHP 2014 : troubles hypertensifs de la grossesse (THG) incluent hypertension gestationnelle, pré-eclampsie, pré-eclampsie superposée sur hypertension chronique, et éclampsie. La pré-eclampsie associe hypertension (>= 140/90) survenant a partir de 20 SA et atteinte d'organe ou proteinurie significative selon les criteres retenus ; variantes sans proteinurie possibles avec autres criteres (hematologiques, hepatiques, renaux, neurologiques, foetaux). L'eclampsie est definie par des convulsions generalisees ou un coma en l'absence d'autre cause neurologique evidente, dans un contexte de THG. Physiopathologie : dysfonction placentaire, desequilibre angiogenique (sFlt-1 eleve, PlGF bas), dysfunction endotheliale et inflammation systemique.",
+    "metadata": { "type": "guideline" }
+  },
+  {
+    "id": "acog222pe-1",
+    "source": "ACOG",
+    "source_id": "acog222pe",
+    "title": "Gestational hypertension and preeclampsia — gravité et éclampsie.",
+    "authors": "ACOG",
+    "year": 2020,
+    "chunk_text": "ACOG Practice Bulletin 222 (2020) : hypertension gestationnelle sans proteinurie ni criteres de gravite severe ; surveillance clinique et tensionnelle. Pre-eclampsie avec criteres de severite (tension tres elevee, thrombopenie, insuffisance hepatique ou renale, epigastralgie, cefalees persistantes, vision trouble, proteinurie massive, restriction de croissance, liquide reduit, elevation LDH, etc.). Eclampsie : crises convulsives ou coma sans cause alternative en contexte de pre-eclampsie / hypertension gestationnelle. Prevention de la recurrence convulsive : sulfate de magnesium selon protocole institutionnel en cas indique. Prise en charge multidisciplinaire et timing de naissance selon age gestationnel et gravite.",
+    "metadata": { "type": "guideline" }
+  },
+  {
+    "id": "nice133-thg-1",
+    "source": "NICE",
+    "source_id": "nice2019ng133",
+    "title": "Hypertension in pregnancy — prévention des convulsions et soins.",
+    "authors": "NICE",
+    "year": 2019,
+    "chunk_text": "NICE NG133 (2019) : hypertension pendant la grossesse — depistage, traitement antihypertenseur, surveillance biologique et du bien-etre foetal. Risque d'eclampsie surtout en pre-eclampsie severe ; offre de sulfate de magnesium pour prevention et traitement des convulsions eclamptiques selon recommandations nationales. Information des femmes sur signes d'alarme (cefalees severes, troubles visuels, douleur epigastrique, dyspnee). Transfert vers milieu adapte si necessaire. Suivi post-partum des THG.",
+    "metadata": { "type": "guideline" }
+  },
+  {
+    "id": "prenatal-has2016-2",
+    "source": "HAS",
+    "source_id": "has2016suivi",
+    "title": "Suivi prenatal : situations a risque et orientation.",
+    "authors": "HAS",
+    "year": 2016,
+    "chunk_text": "Suivi prenatal HAS 2016 : reperage des situations a risque (antecedents obstetricaux, pathologies chroniques, age, imc, grossesse multiple, retard de croissance, menace d'accouchement preterme). Orientation vers structures adaptees (maternite de niveau, centre de diagnostic prenatal, hospitalisation si besoin). Coordination medecin traitant, sage-femme, specialistes. Information et consentement pour les depistages. Mots-cles : suivi prenatal, suivi de grossesse, consultation grossesse, orientation prenatale.",
+    "metadata": { "type": "guideline" }
+  },
+  {
+    "id": "prenatal-csp-2",
+    "source": "CSP",
+    "source_id": "csp2122",
+    "title": "Calendrier legal des examens prenataux et EPP.",
+    "authors": "Code de la Sante Publique",
+    "year": 2021,
+    "chunk_text": "Sept examens prenataux obligatoires : calendrier legal R2122-1 (premier avant 15 SA, puis suivi mensuel 4e-9e mois). Entretien prenatal precoce EPP obligatoire : information sante, alimentation, addictions, violences, depistages, projet de naissance. Depistages associes : anomalie foetale, infections, anemie, glycosurie-proteinurie a chaque consultation. Liens avec assurance maternite et certificats. Mots-cles : suivi prenatal, 7 consultations, EPP, examens obligatoires grossesse.",
+    "metadata": { "type": "guideline" }
+  },
+  {
+    "id": "prenatal-bilan-3",
+    "source": "HAS",
+    "source_id": "has2016suivi",
+    "title": "Depistages serologiques, SGB et vaccins en grossesse (synthese).",
+    "authors": "HAS",
+    "year": 2016,
+    "chunk_text": "Bilan T1 : groupage, RAI, serologies (toxoplasmose, rubéole, hepatite B, syphilis, VIH selon recommandations). Toxoplasmose : serologie mensuelle si non immunisee. Streptocoque B : depistage entre 34-38 SA par ecouvillon vaginal et anal. Vaccination grippe saisonniere et coqueluche recommandee en grossesse selon calendrier vaccinal et HAS. Diabete gestationnel : depistage HGPO 24-28 SA (IADPSG). Mots-cles : suivi prenatal, SGB, vaccin grossesse, serologies grossesse.",
+    "metadata": { "type": "guideline" }
+  },
+  {
+    "id": "ctg-figo-2",
+    "source": "FIGO",
+    "source_id": "figo2015",
+    "title": "Monitoring CTG : patterns pathologiques et escalade.",
+    "authors": "FIGO Intrapartum Fetal Monitoring",
+    "year": 2015,
+    "chunk_text": "Monitoring CTG intrapartum FIGO 2015 : trace Pathologique si bradycardie ou tachycardie prolongee, variabilite minimale ou absente prolongee, decelerations tardives repetees, pattern sinusoidal, compte tenu du contexte clinique. Trace Suspect : un seul parametre anormal — surveillance renforcee et reevaluation frequente. Mesures immediates : position maternelle, correction hypotension, arret ocytociques si indique, oxygenotherapie selon protocole, avis senior. Mots-cles : monitoring CTG, cardiotocographie, surveillance foetale en travail, trace pathologique.",
+    "metadata": { "type": "guideline" }
+  },
+  {
+    "id": "ctg-has-2",
+    "source": "HAS",
+    "source_id": "has2022",
+    "title": "Surveillance foetale par CTG : indications et qualite du trace.",
+    "authors": "HAS",
+    "year": 2022,
+    "chunk_text": "HAS 2022 surveillance foetale en travail : cardiotocographie selon indication (grossesse a risque, travail induit, anomalie a l'auscultation). Qualite du trace : baseline stable documentee, bon contact sondes, interpretation FIGO. Double lecture ou avis en cas de doute. Consentement et traçabilite. Mots-cles : monitoring CTG, surveillance foetale travail, HAS CTG, HITL.",
+    "metadata": { "type": "guideline" }
+  },
+  {
+    "id": "ctg-cochrane-2",
+    "source": "Cochrane",
+    "source_id": "cochrane2017ctg",
+    "title": "CTG continu vs auscultation intermittente.",
+    "authors": "Alfirevic Z, Devane D, Gyte GML",
+    "year": 2017,
+    "chunk_text": "Cochrane 2017 : CTG continu en travail reduit les convulsions neonatales par rapport a l'auscultation intermittente ; augmente les taux de cesarienne et d'accouchement instrumental. Le choix doit integrer le contexte (niveau de risque, ressources, guidelines nationales). Mots-cles : monitoring CTG, EFM, cardiotocographie, benefice risque.",
+    "metadata": { "type": "journal" }
+  },
+  {
+    "id": "risk-has-orientation",
+    "source": "HAS",
+    "source_id": "has2016suivi",
+    "title": "Risques obstetricaux : identification et parcours de soins.",
+    "authors": "HAS",
+    "year": 2016,
+    "chunk_text": "Risques obstetricaux : identifier facteurs maternels (comorbidites, age, imc), obstetricaux (antecedents RCIU, mort in utero, hemorragie), foetaux (croissance, morphologie, Doppler). Adapter la frequence des consultations, le lieu d'accouchement et la surveillance foetale. Information de la femme sur les signes d'alerte. Mots-cles : risques obstetricaux, matrice risque, suivi grossesse a risque.",
+    "metadata": { "type": "guideline" }
+  },
+  {
+    "id": "risk-rciu-2",
+    "source": "CNGOF",
+    "source_id": "cngof2019rciu",
+    "title": "RCIU et risque neonatal — lien avec stratification globale.",
+    "authors": "CNGOF",
+    "year": 2019,
+    "chunk_text": "RCIU : facteur majeur de morbidite perinatale ; intégrer dans l'evaluation globale des risques (accouchement preterme, asphyxie, admission en néonatalogie). Surveillance Doppler et biometrie. Discussion multidisciplinaire du terme. Mots-cles : risques obstetricaux, RCIU, retard croissance foetale.",
+    "metadata": { "type": "guideline" }
+  },
+  {
+    "id": "risk-rcog-sga",
+    "source": "RCOG",
+    "source_id": "rcog2017",
+    "title": "Petit poids de naissance attendu et surveillance antenatale.",
+    "authors": "RCOG",
+    "year": 2017,
+    "chunk_text": "RCOG GTG 31 : fœtus small for gestational age — depistage, surveillance serial, timing de naissance. Réduction de la mortalité perinatale avec protocoles structurés. Mots-cles : risques obstetricaux, SGA, surveillance antenatale.",
+    "metadata": { "type": "guideline" }
+  },
+  {
+    "id": "acc-cngof-2",
+    "source": "CNGOF",
+    "source_id": "cngof2021",
+    "title": "Accouchement : voie basse, periodes du travail et securite.",
+    "authors": "CNGOF",
+    "year": 2021,
+    "chunk_text": "Accouchement voie basse CNGOF 2021 : surveillance clinique maternelle et foetale pendant la phase latente et active ; evaluation de la progression cervicale ; gestion de la douleur (dont analgesie peridurale selon souhait et indication). Reconnaissance des anomalies du travail et de la dystocie. Mots-cles : accouchement, travail obstetrical, phase active, voie basse.",
+    "metadata": { "type": "guideline" }
+  },
+  {
+    "id": "acc-bishop-figo",
+    "source": "FIGO",
+    "source_id": "figo2018bishop",
+    "title": "Score de Bishop et induction du travail.",
+    "authors": "FIGO",
+    "year": 2018,
+    "chunk_text": "FIGO 2018 : score de Bishop pour evaluer la maturation cervicale avant induction (dilatation, effacement, consistance, position, hauteur de la presentation). Score bas : methodes de maturation cervicale selon protocole. Mots-cles : accouchement, Bishop, induction travail, maturation cervicale.",
+    "metadata": { "type": "guideline" }
+  },
+  {
+    "id": "acc-has-cesarienne",
+    "source": "HAS",
+    "source_id": "has2020cesarienne",
+    "title": "Cesarienne : indications et cadre en cours d'accouchement.",
+    "authors": "HAS",
+    "year": 2020,
+    "chunk_text": "HAS 2020 cesarienne : indications maternelles et foetales en intrapartum (souffrance foetale aigue non resolvable, presentation, dystocie non corrigee, etc.). Decision partagee quand situation non vitale immediate. Antibioprophylaxie et thromboprophylaxie selon guidelines. Mots-cles : accouchement, cesarienne, indication cesarienne, urgence obstetricale.",
+    "metadata": { "type": "guideline" }
+  },
+  {
+    "id": "apgar-acog-2",
+    "source": "ACOG",
+    "source_id": "acog2020apgar",
+    "title": "Apgar : interpretation clinique et limites.",
+    "authors": "ACOG",
+    "year": 2020,
+    "chunk_text": "ACOG 804 : le score d'Apgar evalue l'adaptation neonatale a la naissance ; il ne diagnose pas l'asphyxie ni le pronostic neurologique a lui seul. Un score bas peut refleter prematurite, sedoanalgesie maternelle, malformation. Documenter a 1 et 5 min ; score a 10 min si persistance de detresse (resuscitation neonatale). Mots-cles : Apgar, score Apgar, adaptation neonatale, reanimation salle de naissance.",
+    "metadata": { "type": "guideline" }
+  },
+  {
+    "id": "apgar-sfn-2",
+    "source": "Societe Francaise de Neonatologie",
+    "source_id": "sfn2016neonatal",
+    "title": "Soins en salle de naissance et evaluation du nouveau-ne.",
+    "authors": "SFN",
+    "year": 2016,
+    "chunk_text": "SFN 2016 : stabilisation thermique, sechage, peau a peau si possible, clampage cordon selon recommandations, evaluation respiration et tonus, score Apgar chronometre. Escalade vers reanimation neonatale selon algorithmes. Mots-cles : Apgar, salle de naissance, neonatalogie, adaptation nouveau-ne.",
+    "metadata": { "type": "guideline" }
+  },
+  {
+    "id": "apgar-nice-postnatal",
+    "source": "NICE",
+    "source_id": "nice2023postnatal",
+    "title": "Postnatal immediat : examen du bebe et surveillance.",
+    "authors": "NICE",
+    "year": 2023,
+    "chunk_text": "NICE NG194 : soins postnatals precoces — examen physique du nouveau-ne, depistage, surveillance de l'alimentation et du jaunisse, signes d'alerte pour les parents. L'Apgar fait partie de l'evaluation initiale en salle de naissance. Mots-cles : Apgar, postnatal, examen nouveau-ne.",
+    "metadata": { "type": "guideline" }
+  },
+  {
+    "id": "pmi-csp-1",
+    "source": "CSP",
+    "source_id": "csp_pmi",
+    "title": "PMI : missions et acces aux soins de l'enfant 0-6 ans.",
+    "authors": "Code de la Sante Publique",
+    "year": 2021,
+    "chunk_text": "PMI Protection Maternelle et Infantile : service public de prevention et de sante pour les femmes enceintes, les jeunes enfants et les familles. Consultations gratuites, depistages (croissance, developpement, vision, audition selon programmes), vaccinations rappel et coordination avec le medecin traitant, soutien a l'allaitement, orientation vers specialistes. Mots-cles : PMI, protection maternelle et infantile, puériculture, sante enfant.",
+    "metadata": { "type": "guideline" }
+  },
+  {
+    "id": "pmi-consultations-2",
+    "source": "Sante publique France",
+    "source_id": "csp_pmi",
+    "title": "Bilans de sante de l'enfant et carnet de sante.",
+    "authors": "Sante publique France",
+    "year": 2020,
+    "chunk_text": "Parcours de sante enfant : examens de sante recommandes a des ages cles (naissance a l'ecole), depistages des troubles du neurodeveloppement, conseils nutrition et prevention des accidents. Carnet de sante : suivi des vaccinations et des parametres de croissance. La PMI participe a ce parcours aux cotes de la medecine de ville. Mots-cles : PMI, bilan de sante enfant, carnet sante, consultation PMI.",
+    "metadata": { "type": "guideline" }
+  },
+  {
+    "id": "pmi-nice-postnatal",
+    "source": "NICE",
+    "source_id": "nice2023postnatal",
+    "title": "Soins postnatals precoces et lien ville-hôpital.",
+    "authors": "NICE",
+    "year": 2023,
+    "chunk_text": "Postnatal : information sur les soins au nouveau-ne, allaitement, signes d'alerte, planification du suivi apres sortie de maternite. Les structures de PMI ou equivalents contribuent au continuum de soins prevention-promotion. Mots-cles : PMI, postnatal, suivi nouveau-ne, allaitement.",
+    "metadata": { "type": "guideline" }
   }
 ]

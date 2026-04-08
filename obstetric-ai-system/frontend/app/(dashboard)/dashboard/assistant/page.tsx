@@ -27,11 +27,14 @@ const MOCK_PATIENTS: Patient[] = [
 
 const ASSISTANT_SUGGESTIONS = [
   'Bonjour, comment puis-je vous aider ?',
+  'Suivi prénatal : 7 consultations obligatoires et EPP',
+  'Monitoring CTG intrapartum selon FIGO 2015',
+  'Évaluation des risques obstétricaux et RCIU',
+  'Accouchement : score de Bishop et indications de césarienne',
+  'Score Apgar et adaptation néonatale (ACOG 804)',
+  'PMI : rôle et consultations enfant 0–6 ans',
+  'Quelles sont les causes de l’éclampsie et le lien avec la pré-éclampsie ?',
   'Resume la situation de la patiente selectionnee',
-  'Explique la classification FIGO',
-  'Quels sont les risques obstetricaux ?',
-  'Recherche recommandations HAS et CNGOF',
-  'Evaluer un score Apgar',
 ];
 
 interface ChatMessage {
@@ -51,6 +54,14 @@ export default function AssistantPage() {
         summary: 'Espace de travail médecin/équipe – Assistant Obstetric AI.',
         narrative: 'Posez des questions sur les patientes, les situations cliniques (CTG, Apgar, risques) et la recherche médicale obstétricale. Les réponses sont structurées (résumé, narratif technique, métriques, recommandations) et sourcées en Harvard Cite It Right. Vous pouvez joindre des fichiers pour enrichir le contexte (RAG) et sélectionner une patiente à droite.',
         references: [],
+        suggestedQuestions: [
+          'Suivi prénatal : calendrier des dépistages et SGB',
+          'Monitoring CTG : trace pathologique et HITL',
+          'Risques obstétricaux : RCIU et surveillance antenatale',
+          'Accouchement : induction et score de Bishop',
+          'Apgar à 5 minutes : limites et conduite pratique',
+          'PMI après la maternité : carnet de santé et vaccins',
+        ],
       },
     },
   ]);
@@ -172,7 +183,7 @@ export default function AssistantPage() {
               ) : msg.structuredResponse ? (
                 <div key={msg.id} className="flex justify-start">
                   <div className="max-w-[95%] rounded-2xl bg-slate-100 px-4 py-3 text-sm text-slate-800">
-                    <StructuredResponse data={msg.structuredResponse} />
+                    <StructuredResponse data={msg.structuredResponse} onFollowUp={(q) => setInput(q)} />
                   </div>
                 </div>
               ) : (

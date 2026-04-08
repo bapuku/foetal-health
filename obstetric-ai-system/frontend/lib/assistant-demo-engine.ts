@@ -15,15 +15,51 @@ const DEMO_TRIANGULATION: TriangulationRow[] = [
 ];
 
 function detectIntent(text: string): string {
-  const t = text.toLowerCase().trim();
-  if (/\b(patiente?|patient|dossier|suivi|risque\s+patiente)\b/.test(t)) return 'patient';
-  if (/\b(ctg|analyse ctg|classification figo|fhr|cardio|trace)\b/.test(t)) return 'ctg';
-  if (/\b(apgar|score apgar|evaluer apgar|neonatal|adaptation)\b/.test(t)) return 'apgar';
-  if (/\b(risque|rciu|cesarienne|preterme|shap|matrice)\b/.test(t)) return 'risk';
-  if (/\b(recherche|literature|etude|pubmed|recommandation|figo|has|cngof|nice|acog)\b/.test(t)) return 'research';
-  if (/\b(bonjour|hello|salut|aide|quoi faire)\b/.test(t)) return 'greeting';
-  if (/\b(bishop|surveillance\s+foetale|intrapartum|travail|cesarienne|kangourou|oms|who)\b/.test(t)) return 'general';
-  if (/\b(prenatal|prénatal|consultations?\s+obligatoires|sept\s+consultations|echographie\s+t1|t21|dpni|diabete\s+gestationnel|hgpo|streptocoque\s+b|sgb|calendrier\s+grossesse|epp|entretien\s+prénatal)\b/.test(t)) return 'prenatal';
+  const t = text
+    .toLowerCase()
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+  if (
+    /\b(é|e)clampsie|pre[- ]?eclampsie|preeclampsia|hellp|toxemie|hypertension\s+(gestationnelle|gravidique|de\s+la\s+grossesse|g(estatic|rossesse))|hta\s+(gestationnelle|gravidique|g(estatic|rossesse))|hgf|htg|convulsions?\s+(?:en|de|pendant)?\s*(?:la\s+)?grossesse|crise\s+toxemique\b/.test(
+      t
+    )
+  )
+    return 'pe_eclampsia';
+  if (
+    /\bpmi\b|protection\s+maternelle(\s+et\s+infantile)?|puericulture|consultation\s+pmi|centre\s+de\s+pmi|carnet\s+de\s+sante|sante\s+infantile\s+0|bilan\s+de\s+sante\s+enfant\b/.test(
+      t
+    )
+  )
+    return 'pmi';
+  if (
+    /\b(suivi\s+pre[- ]?natal|suivi\s+de\s+la\s+grossesse|suivi\s+grossesse|prenatal|perinatalite|7\s+consultations|sept\s+consultations|consultations?\s+obligatoires|epp\b|entretien\s+prenatal|echographie\s+(obstetricale|t1|t2|t3)|t21|dpni|diabete\s+gestationnel|hgpo|streptocoque\s+b|sgb|calendrier\s+grossesse|depistage\s+prenatal|bilan\s+prenatal)\b/.test(
+      t
+    )
+  )
+    return 'prenatal';
+  if (
+    /\b(accouchement|delivrance|peridurale|analgesie\s+peridurale|phase\s+expulsive|salle\s+de\s+naissance|voie\s+basse|deuxieme\s+phase|2e\s+phase|induction\s+du\s+travail|maturation\s+cervicale|bishop|travail\s+obstetrical|periode\s+d\w*expulsion)\b/.test(
+      t
+    )
+  )
+    return 'accouchement';
+  if (
+    /\b(monitoring\s+ctg|analyse\s+ctg|cardiotocograp|cardiotocographie|ctg\b|trace\s+ctg|classification\s+figo|fhr\b|efm\b|monitoring\s+foetal|surveillance\s+foetale\s+en\s+travail|cardio\s+foetal)\b/.test(
+      t
+    )
+  )
+    return 'ctg';
+  if (/\b(apgar|score\s+d?\s*apgar|evaluer\s+apgar|adaptation\s+neonatale)\b/.test(t)) return 'apgar';
+  if (/\b(patiente?|patient\b|dossier|risque\s+patiente)\b/.test(t)) return 'patient';
+  if (/\b(suivi|suivre)\b.*\b(patiente|dossier|elle)\b/.test(t)) return 'patient';
+  if (/\b(risques?\s+obstetric|risk\s+assessment|evaluation\s+des\s+risques|rciu|preterme|shap|matrice\s*5|prediction\s+risque)\b/.test(t) || /^\s*risques?\s*$/i.test(text.trim()))
+    return 'risk';
+  if (/\b(risque|risques)\b/.test(t)) return 'risk';
+  if (/\b(recherche|literature|etude|pubmed|recommandation)\b/.test(t)) return 'research';
+  if (/\b(bonjour|hello|salut|aide|quoi\s+faire)\b/.test(t)) return 'greeting';
+  if (/\b(figo|has|cngof|nice|acog)\b/.test(t)) return 'research';
+  if (/\b(surveillance\s+foetale|intrapartum|travail|cesarienne|kangourou|oms|who)\b/.test(t)) return 'general';
   return 'default';
 }
 
@@ -60,38 +96,42 @@ export function generateStructuredDemoResponse(
 
     case 'ctg': {
       const ctg = generateAgentDemoResult('CTG Monitor');
+      const ragNote =
+        "\n\nRéférentiels (FIGO 2015, HAS 2022, Cochrane 2017) : catégories Normal / Suspect / Pathologique ; en cas de trace pathologique ou persistant suspect, réévaluation clinique, avis senior et HITL. Le monitoring continu modifie le bilan bénéfice-risque (hausse des césariennes et instrumentations vs réduction de certains événements néonataux selon méta-analyses) — individualiser selon le niveau de risque obstétrical. Les extraits RAG « monitoring CTG » détaillent patterns, indications HAS et limites de l'EFM.";
       return {
         summary: ctg.summary,
-        narrative: ctg.narrative,
+        narrative: `${ctg.narrative}${ragNote}`,
         metrics: ctg.metrics.map((m) => ({ name: m.name, value: m.value, threshold: m.threshold, status: m.status })),
         patientContext: ctg.patientData,
         recommendations: [
           { action: 'Poursuite surveillance CTG selon FIGO 2015', level: 'I-A' },
           { action: 'Escalade HITL si classification pathologique', level: 'I-A' },
         ],
-        references: refsFromIds(['figo2015', 'has2022']),
+        references: refsFromIds(['figo2015', 'has2022', 'cochrane2017ctg']),
       };
     }
 
     case 'apgar': {
       const apgar = generateAgentDemoResult('Apgar');
+      const ragNote =
+        "\n\nACOG Committee Opinion 804 (2020) : l'Apgar décrit l'adaptation à la naissance à 1 et 5 minutes (et au-delà si réanimation) ; il ne constitue pas un diagnostic d'asphyxie ni un outil de pronostic neurologique isolé. SFN 2016 : intégration dans la stabilisation en salle de naissance (thermique, respiration, tonus). NICE NG194 : continuité du postnatal immédiat et information des parents. Voir extraits RAG « Apgar » pour limites et conduites associées.";
       return {
         summary: apgar.summary,
-        narrative: apgar.narrative,
+        narrative: `${apgar.narrative}${ragNote}`,
         metrics: apgar.metrics,
         patientContext: apgar.patientData,
         recommendations: [
           { action: 'Score Apgar documenté à 1 et 5 min', level: 'I-A' },
           { action: 'Escalade pédiatre si Apgar ≤ 6', level: 'I-A' },
         ],
-        references: refsFromIds(['cngof2021', 'nice2014', 'acog2009']),
+        references: refsFromIds(['acog2020apgar', 'sfn2016neonatal', 'nice2023postnatal']),
       };
     }
 
     case 'risk': {
       return {
-        summary: 'Risques obstétricaux (RCIU, césarienne urgence, Apgar bas, prématurité) évalués. Matrice 5×5 et rapport de risk assessment disponibles dans l\'onglet Risques.',
-        narrative: 'Synthèse des risques : RCIU estimé à 12 % (IC 95 % 8-16), césarienne en urgence 18 % (14-22), Apgar <7 à 5 min 5 % (2-8), prématurité 8 % (5-11). Les données sont issues des agents RCIU, Mom-Baby et du cross-check Symbolic. La triangulation avec les recommandations FIGO, HAS et CNGOF est convergente. Pour le détail par risque et les preuves, consulter le tableau de risk assessment et la matrice 5×5 sur la page Risques.',
+        summary: 'Risques obstétricaux (matrice, RCIU, prématurité, mode d’accouchement, adaptation néonatale) : stratification multi-facteurs alignée HAS 2016, CNGOF RCIU 2019 et RCOG 2017. Les agents du module Risques et la triangulation fournissent des probabilités indicatives.',
+        narrative: 'Évaluation des risques : identification des facteurs maternels (âge, IMC, comorbidités), obstétricaux (antécédents de RCIU, mort fœtale, hémorragie, prématurité) et fœtaux (croissance, Doppler, morphologie). RCIU / petit poids : surveillance serial et timing de naissance selon CNGOF 2019 et RCOG GTG 31. Probabilités illustratives (démo) : RCIU 12 % (IC 95 % 8–16), césarienne en urgence 18 % (14–22), Apgar < 7 à 5 min 5 % (2–8), prématurité 8 % (5–11) — chiffres non transférables sans modèle calibré sur votre population. Croiser avec FIGO/HAS pour la surveillance foetale intrapartum. Détail et explicabilité (SHAP) : onglet Risques. Extraits RAG « risques obstetricaux » pour l’orientation et le RCIU.',
         metrics: [
           { name: 'RCIU', value: '12 %', threshold: '< 15 % faible', status: 'normal' },
           { name: 'Césarienne urgence', value: '18 %', threshold: '< 25 %', status: 'normal' },
@@ -103,7 +143,7 @@ export function generateStructuredDemoResponse(
           { action: 'Surveillance foetale selon HAS 2022', level: 'I-A' },
           { action: 'Point HITL si CTG pathologique ou Apgar ≤ 6', level: 'I-A' },
         ],
-        references: refs,
+        references: refsFromIds(['has2016suivi', 'cngof2019rciu', 'rcog2017', 'figo2015', 'has2022']),
       };
     }
 
@@ -134,8 +174,8 @@ export function generateStructuredDemoResponse(
     case 'prenatal': {
       const prenatalRefs = refsFromIds(['has2016suivi', 'has2017t21', 'csp2122', 'cngofsfd2010dg', 'has2022']);
       return {
-        summary: 'Suivi prénatal français : 7 consultations obligatoires (CSP R2122-1), EPP, 3 échographies, dépistages T21 (3 paliers HAS), DG (IADPSG), SGB. Normes biologiques par trimestre.',
-        narrative: 'En France, le suivi prénatal repose sur les articles L2122-1 et R2122-1 CSP : sept examens prénataux obligatoires (premier avant 15 SA, puis mensuels du 4e au 9e mois), l\'entretien prénatal précoce (EPP, obligatoire depuis 2020), et trois échographies recommandées (T1 datation/CN, T2 morphologique, T3 croissance). Dépistage trisomie 21 : risque combiné T1 ; trois paliers HAS 2017 (< 1/1000 surveillance standard, 1/1000-1/51 proposition DPNI, ≥ 1/50 proposition caryotype). Diabète gestationnel : critères IADPSG (HGPO 75 g), CNGOF/SFD 2010. Streptocoque B : prélèvement 34-38 SA. Sérologie toxoplasmose mensuelle si non immunisée. Références : HAS 2016 suivi, HAS 2017 T21, CSP, CNGOF/SFD 2010.',
+        summary: 'Suivi prénatal (France) : cadre légal des 7 consultations, EPP, échographies et dépistages ; repérage des situations à risque et orientation HAS 2016 ; bilans biologiques et SGB.',
+        narrative: 'Le suivi prénatal combine obligations du Code de la santé publique (R2122-1 : 7 examens, premier avant 15 SA puis suivi mensuel 4e–9e mois) et l’entretien prénatal précoce obligatoire (information, violences, addictions, projet de naissance). Trois échographies sont attendues dans le parcours standard (T1 datation/CN, T2 morphologie, T3 croissance). Dépistage T21 : stratégie à 3 paliers HAS 2017 ; DG : HGPO 24–28 SA et critères IADPSG (CNGOF/SFD 2010) ; SGB : dépistage 34–38 SA. HAS 2016 : adapter la fréquence et le lieu d’accouchement si facteurs de risque. Les extraits RAG « suivi prenatal » reprennent calendrier légal, bilans sérologiques/vaccins et orientation. Références : HAS 2016, HAS 2017 T21, CSP, CNGOF/SFD 2010.',
         recommendations: [
           { action: 'Consulter l\'onglet Suivi prénatal pour le calendrier et les dépistages', level: 'I-A' },
           { action: 'Vérifier la conformité du calendrier (7 consultations + EPP + 3 échos)', level: 'I-A' },
@@ -156,12 +196,60 @@ export function generateStructuredDemoResponse(
       };
     }
 
+    case 'accouchement': {
+      const accRefs = refsFromIds(['cngof2021', 'figo2018bishop', 'has2020cesarienne', 'nice2014', 'who2018', 'has2022']);
+      return {
+        summary:
+          'Accouchement : conduite du travail (phases, surveillance maternelle et fœtale), analgésie, maturation cervicale et induction (score de Bishop), indications de césarienne et sécurité intrapartum selon CNGOF 2021, HAS et NICE.',
+        narrative:
+          "CNGOF 2021 décrit la prise en charge de l'accouchement par voie basse : surveillance clinique pendant la phase latente et active, gestion de la douleur (y compris péridurale sur indication et choix de la femme), surveillance du bien-être fœtal selon HAS 2022 et interprétation FIGO 2015 du CTG. FIGO 2018 : score de Bishop et stratégie d'induction / maturation cervicale. HAS 2020 : cadre des indications et de la réalisation de la césarienne (urgences vs programme). NICE CG190 et WHO 2018 : principes de soins respectueux, compagnonnage et réduction des interventions inutiles. Contenu pédagogique ; appliquer les protocoles locaux. Extraits RAG « accouchement », « Bishop », « césarienne ».",
+        recommendations: [
+          { action: 'Vérifier le score de Bishop avant toute induction programmée', level: 'I-A' },
+          { action: 'Documenter le consentement et le plan de naissance ; escalade si souffrance fœtale aiguë', level: 'I-A' },
+        ],
+        references: accRefs,
+      };
+    }
+
+    case 'pmi': {
+      const pmiRefs = refsFromIds(['csp_pmi', 'nice2023postnatal', 'oms2014kangourou']);
+      return {
+        summary:
+          'PMI (Protection maternelle et infantile) : service public de prévention — consultations gratuites, suivi de la croissance et du développement de l’enfant 0–6 ans, vaccination, allaitement, orientation ; lien avec le postnatal et la médecine de ville.',
+        narrative:
+          "Le Code de la santé publique organise les missions de prévention et les services départementaux (articles L2111-1 et s.) : accueil des familles, évaluation de l’enfant, dépistages (croissance, développement, vision, audition selon programmes), rappels vaccinaux et coordination avec le médecin traitant, soutien à l’allaitement et prévention des accidents domestiques. Le carnet de santé structure le suivi. Après la maternité, NICE NG194 insiste sur l’information des parents, les signes d’alerte et la continuité des soins — la PMI participe à ce continuum avec l’hôpital et la ville. OMS : peau à peau et soutien à l’allaitement. Contenu informatif ; modalités selon votre département. Extraits RAG « PMI ».",
+        recommendations: [
+          { action: 'Orienter vers la PMI de secteur pour le carnet et les bilans de l’enfant', level: 'I-B' },
+          { action: 'Coordonner avec le pédiatre / médecin traitant pour les vaccins et dépistages', level: 'I-A' },
+        ],
+        references: pmiRefs,
+      };
+    }
+
+    case 'pe_eclampsia': {
+      const peRefs = refsFromIds(['isshp2014', 'acog222pe', 'nice2019ng133', 'cngof2021']);
+      return {
+        summary:
+          "L'éclampsie est définie par des convulsions généralisées (et/ou un coma) survenant en l'absence d'une autre cause neurologique évidente, dans un contexte de troubles hypertensifs de la grossesse (THG), le plus souvent sur pré-éclampsie sévère. Les mécanismes précis des crises restent incomplets ; la prise en charge est urgente (guidelines).",
+        narrative:
+          "Cadre nosologique (ISSHP 2014 ; ACOG 222) : la pré-éclampsie est un syndrome materno-fœtal lié au placenta, avec hypertension et atteinte d'organe (protéinurie ou critères alternatifs). L'éclampsie s'ajoute lors de crises convulsives ou de coma non attribuables à une autre cause. Physiopathologie (synthèse consensus) : dysfonction placentaire précoce, libération de facteurs anti-angiogéniques (sFlt-1) et déficit relatif de pro-angiogéniques (PlGF), inflammation et dysfonction endothéliale systémique ; complications vasculaires cérébrales (œdème, hyperperfusion, ischémie) et seuils de seuil convulsif mal caractérisés expliquent en partie l'apparition des crises. « Causes » au sens clinique : la grande majorité des éclampsies surviennent dans un contexte de pré-éclampsie (souvent sévère) ; des formes atypiques ou sans critères classiques complets sont décrites. Facteurs de risque associés à l'aggravation vers éclampsie incluent notamment nulliparité, antécédents de pré-éclampsie/éclampsie, maladie rénale chronique, diabète, obésité, grossesse multiple, âge extrême, retard de prise en charge de l'HTA sévère — sans liste exhaustive (NICE NG133, ACOG 222). Ce contenu est pédagogique ; toute situation réelle impose décision clinique et protocole local. Références : ISSHP 2014, ACOG PB 222 (2020), NICE NG133.",
+        recommendations: [
+          { action: 'Urgences obstétricales : stabilisation maternelle, prévention récidive (MgSO4 selon protocole), évaluation fœtale et timing d\'accouchement selon guidelines', level: 'I-A' },
+          { action: 'Avec clé API Claude activée, réponses plus détaillées et contextualisées (RAG + littérature)', level: '—' },
+        ],
+        references: peRefs,
+      };
+    }
+
     default: {
       return {
-        summary: 'Réponse générique : je peux vous aider sur les patientes, le CTG, l\'Apgar, les risques et la littérature obstétricale. Références Harvard ; export EndNote (.ris) disponible.',
-        narrative: 'Je peux vous fournir des réponses structurées et sourcées sur : (1) le contexte d\'une patiente et son suivi (strictement fondé sur les données dossier), (2) l\'analyse CTG et la classification FIGO (2015), (3) l\'évaluation Apgar et l\'adaptation néonatale (ACOG 804, CNGOF, NICE), (4) les risques obstétricaux (RCIU, césarienne, prématurité), (5) les recommandations et la recherche (FIGO, HAS, CNGOF, NICE, ACOG, OMS). Chaque réponse inclut un résumé, un narratif technique, des métriques si pertinent, et des références au format Harvard Cite It Right, exportables en .ris.',
+        summary:
+          'Réponse générique (mode démo) : précisez un thème couvert par la base RAG (suivi prénatal, monitoring CTG, risques obstétricaux, accouchement, Apgar, PMI, THG/éclampsie…) ou configurez la clé API.',
+        narrative:
+          'Intents démo disponibles : suivi prénatal (7 consultations, EPP, dépistages), monitoring CTG (FIGO, HAS, Cochrane), risques (RCIU, stratification), accouchement (travail, Bishop, césarienne), Apgar et adaptation néonatale, PMI et suite postnatale, dossier patiente, THG/éclampsie. Reformulez avec les mots-clés du thème ou activez ANTHROPIC_API_KEY pour le mode complet.',
         recommendations: [
-          { action: 'Reformuler avec un mot-clé (patient, CTG, Apgar, risque, recherche, Bishop, surveillance)', level: '—' },
+          { action: 'Exemples : « suivi prénatal SGB », « monitoring CTG pathologique », « risques RCIU », « accouchement induction », « score Apgar », « consultation PMI »', level: '—' },
+          { action: 'Configurer ANTHROPIC_API_KEY pour réponses JSON structurées hors démo', level: '—' },
         ],
         references: refs.slice(0, 5),
       };
