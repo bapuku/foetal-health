@@ -5,8 +5,13 @@ import { CLINICAL_REFERENCES } from '@/lib/citations';
 import { getEnrichedPatientContext } from '@/lib/patient-context';
 import { getKnowledgeChunksForQuery } from '@/lib/knowledge-retrieval';
 import type { KnowledgeChunk } from '@/lib/knowledge-types';
+import { buildAssistantAmplifiedPreamble } from '@/lib/prompt-system-v2';
 
-const SYSTEM_PROMPT_BASE = `Tu es l'assistant Obstetric AI pour médecins et équipes. Tu réponds UNIQUEMENT en JSON valide, sans texte avant ou après, selon le schéma suivant :
+const _PROMPT_V2 = buildAssistantAmplifiedPreamble();
+
+const SYSTEM_PROMPT_BASE = `${_PROMPT_V2}
+
+Tu es l'assistant Obstetric AI pour médecins et équipes. Tu réponds UNIQUEMENT en JSON valide, sans texte avant ou après, selon le schéma suivant :
 {
   "summary": "1-2 phrases de synthèse",
   "narrative": "Narratif technique détaillé en français, langage clinique, avec références (auteur, année) pour chaque affirmation",

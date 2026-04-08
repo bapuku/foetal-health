@@ -15,7 +15,10 @@ from pydantic import BaseModel
 from typing import Optional
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+
+_OBS = Path(__file__).resolve().parents[3]
+if str(_OBS) not in sys.path:
+    sys.path.insert(0, str(_OBS))
 from shared.llm_router import LLMRouter
 from shared.llm_router.router import TaskType
 from shared.audit_logger import AuditLogger
@@ -49,13 +52,23 @@ def apgar_transition(input_data: ApgarInput) -> ApgarOutput:
     _validate_apgar(input_data.apgar_1min, input_data.apgar_5min)
     risk_apgar_low = input_data.apgar_5min < 7
     hitl_required = input_data.apgar_5min <= 6
+    from shared.prompt_system import build_llm_system_prompt
+
     model_id = router_llm.route(task=TaskType.FAST_ANALYSIS, urgency="critical")
-    prompt = f"Apgar 1min={input_data.apgar_1min}, 5min={input_data.apgar_5min}. Donne un résumé néonatal ~150 mots et recommandations. Pas de diagnostic final."
+    system = build_llm_system_prompt("ApgarPrompt")
+    user_msg = f"""Apgar 1min={input_data.apgar_1min}, 5min={input_data.apgar_5min}.
+FC={input_data.heart_rate}, respiration={input_data.respiration}, tonus={input_data.tone}, réflexe={input_data.reflex}, couleur={input_data.color}.
+Résumé néonatal ~150 mots et recommandations selon ILCOR 2020. Pas de diagnostic final."""
     try:
         if os.getenv("ANTHROPIC_API_KEY"):
             import anthropic
             c = anthropic.Anthropic()
-            r = c.messages.create(model="claude-sonnet-4-20250514", max_tokens=300, messages=[{"role": "user", "content": prompt}])
+            r = c.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=300,
+                system=system,
+                messages=[{"role": "user", "content": user_msg}],
+            )
             narrative = r.content[0].text if r.content else ""
         else:
             narrative = f"Apgar 1min {input_data.apgar_1min}, 5min {input_data.apgar_5min}. Surveillance néonatale recommandée. Validation pédiatre si 5min ≤ 6."

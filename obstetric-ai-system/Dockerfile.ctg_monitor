@@ -1,0 +1,13 @@
+# Same as Dockerfile.agent plus bundled CTG tabular model weights.
+FROM python:3.11-slim
+ARG AGENT_DIR=agents/ctg_monitor
+ARG AGENT_PORT=8000
+WORKDIR /app
+COPY ${AGENT_DIR}/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+COPY ${AGENT_DIR}/src/ ./src/
+COPY ${AGENT_DIR}/model/ ./model/
+COPY shared/ ./shared/
+ENV PYTHONPATH=/app
+EXPOSE ${AGENT_PORT}
+CMD uvicorn src.main:app --host 0.0.0.0 --port ${AGENT_PORT}

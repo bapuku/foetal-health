@@ -14,17 +14,27 @@ except ImportError:
     _router_available = False
 
 
-def _call_anthropic(prompt: str, model_id: str, api_model: str, max_tokens: int = 1024) -> str:
+def _call_anthropic(
+    prompt: str,
+    model_id: str,
+    api_model: str,
+    max_tokens: int = 1024,
+    system: str | None = None,
+) -> str:
     import anthropic
+
     key = os.getenv("ANTHROPIC_API_KEY", "")
     if not key:
         return ""
     c = anthropic.Anthropic(api_key=key)
-    r = c.messages.create(
-        model=api_model,
-        max_tokens=max_tokens,
-        messages=[{"role": "user", "content": prompt}],
-    )
+    kwargs: dict = {
+        "model": api_model,
+        "max_tokens": max_tokens,
+        "messages": [{"role": "user", "content": prompt}],
+    }
+    if system:
+        kwargs["system"] = system
+    r = c.messages.create(**kwargs)
     return r.content[0].text if r.content else ""
 
 
@@ -64,7 +74,14 @@ def generate_clinical_narrative(context: dict, task_type: str = "prenatal_analys
     en_retard = context.get("examens_en_retard") or []
     resultats_anormaux = context.get("resultats_anormaux") or []
 
-    prompt = f"""Tu es un médecin obstétricien. Rédige un narratif clinique concis (~200 mots) pour un suivi prénatal français.
+    try:
+        from shared.prompt_system import build_llm_system_prompt
+
+        system = build_llm_system_prompt("ClinicalSummaryPrompt")
+    except Exception:
+        system = None
+
+    prompt = f"""Rédige un narratif clinique concis (~200 mots) pour un suivi prénatal français (style SOAP orienté synthèse).
 Contexte :
 - SA : {sa}
 - Calendrier CSP : {'conforme' if conforme else 'non conforme'}
@@ -76,7 +93,7 @@ Référentiels : HAS 2016/2017, CNGOF, CSP R2122-1/R2122-2. Style technique, pas
 
     try:
         if "claude" in model_id.lower():
-            text = _call_anthropic(prompt, model_id, api_model, max_tokens=512)
+            text = _call_anthropic(prompt, model_id, api_model, max_tokens=512, system=system)
         elif "gpt" in model_id.lower():
             text = _call_openai(prompt, model_id, api_model, max_tokens=512)
         else:
@@ -138,6 +155,13 @@ def generate_diagnostic_report(
         "consultation": consultation_data or {},
         "screenings": screening_results or {},
     }
+    try:
+        from shared.prompt_system import build_llm_system_prompt
+
+        report_system = build_llm_system_prompt("ClinicalSummaryPrompt")
+    except Exception:
+        report_system = None
+
     prompt = f"""Génère un rapport médico-diagnostique structuré pour une consultation de suivi prénatal (SA {sa}).
 Données : {json.dumps(ctx, ensure_ascii=False, default=str)[:3000]}
 
@@ -154,7 +178,7 @@ Références : HAS 2016/2017, CSP R2122, CNGOF/SFD 2010, IADPSG. Réponds unique
 
     try:
         if "claude" in model_id.lower():
-            text = _call_anthropic(prompt, model_id, api_model, max_tokens=1500)
+            text = _call_anthropic(prompt, model_id, api_model, max_tokens=1500, system=report_system)
         elif "gpt" in model_id.lower():
             text = _call_openai(prompt, model_id, api_model, max_tokens=1500)
         else:

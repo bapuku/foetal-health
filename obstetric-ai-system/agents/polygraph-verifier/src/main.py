@@ -7,9 +7,13 @@ import os
 import time
 from fastapi import FastAPI
 from pydantic import BaseModel
+import json
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+
+_OBS = Path(__file__).resolve().parents[3]
+if str(_OBS) not in sys.path:
+    sys.path.insert(0, str(_OBS))
 from shared.llm_router import LLMRouter
 from shared.llm_router.router import TaskType
 from shared.audit_logger import AuditLogger
@@ -30,13 +34,23 @@ class PolygraphOutput(BaseModel):
 @app.post("/api/polygraph-verify", response_model=PolygraphOutput)
 def polygraph_verify(input_data: PolygraphInput) -> PolygraphOutput:
     start = time.perf_counter()
+    from shared.prompt_system import build_llm_system_prompt
+
     model_id = router_llm.route(task=TaskType.RESEARCH)
-    prompt = "Vérifie la cohérence et la fiabilité des sorties agents suivantes. Donne un score de confiance 0-1 et un risque d'hallucination 0-1, puis résumé ~150 mots."
+    system = build_llm_system_prompt("TruthVerifierPrompt")
+    payload = json.dumps(input_data.agent_narratives, ensure_ascii=False, default=str)[:14000]
+    user_msg = f"""Textes produits par les agents (JSON agent_id → narrative) :\n{payload}\n\n
+Vérifie cohérence, plausibilité clinique et citations. Donne un score de confiance 0-1, un risque d'hallucination 0-1, puis résumé ~150 mots. Si hallucination critique sur donnée numérique, le signaler explicitement."""
     try:
         if os.getenv("ANTHROPIC_API_KEY"):
             import anthropic
             c = anthropic.Anthropic()
-            r = c.messages.create(model="claude-sonnet-4-20250514", max_tokens=400, messages=[{"role": "user", "content": prompt}])
+            r = c.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=400,
+                system=system,
+                messages=[{"role": "user", "content": user_msg}],
+            )
             narrative = r.content[0].text if r.content else "Vérification effectuée."
         else:
             narrative = "Vérification croisée des sorties. Confiance globale >= 0.95 si cohérent. Alerte si confiance < 0.90."

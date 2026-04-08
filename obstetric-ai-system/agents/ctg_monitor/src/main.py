@@ -5,22 +5,36 @@ HITL if Pathologique.
 """
 import hashlib
 import os
+import sys
 import time
 from pathlib import Path
-# Charger .env depuis la racine du projet
-_env_path = Path(__file__).resolve().parent.parent.parent.parent / ".env"
-if _env_path.exists():
-    import dotenv
-    dotenv.load_dotenv(_env_path)
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-# Add shared to path
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+
+def _root_with_shared() -> Path:
+    here = Path(__file__).resolve().parent
+    for d in [here, *here.parents]:
+        if (d / "shared" / "llm_router").is_dir():
+            return d
+    return here.parent.parent
+
+
+_root = _root_with_shared()
+sys.path.insert(0, str(_root))
+_src_dir = Path(__file__).resolve().parent
+if str(_src_dir) not in sys.path:
+    sys.path.insert(0, str(_src_dir))
+
+_env_path = _root / ".env"
+if _env_path.exists():
+    import dotenv
+
+    dotenv.load_dotenv(_env_path)
+
+import ml_ctg
 from shared.llm_router import LLMRouter
 from shared.llm_router.router import TaskType
 from shared.audit_logger import AuditLogger
@@ -37,7 +51,11 @@ class CTGInput(BaseModel):
     ltv_pct: Optional[float] = None
     decelerations_light: float = 0.0
     decelerations_severe: float = 0.0
-    signal_60s: Optional[list[float]] = None  # 4Hz = 240 points
+    signal_60s: Optional[list[float]] = None  # 4Hz = 240 points (réservé usage futur TorchServe)
+    features_21: Optional[list[float]] = Field(
+        default=None,
+        description="21 caractéristiques tabulaires UCI (ordre fetal_health.csv, sans la cible). Active le classifieur entraîné.",
+    )
 
 class CTGOutput(BaseModel):
     classification: str
@@ -51,21 +69,35 @@ def _validate_signal(baseline_bpm: float) -> None:
     if not (110 <= baseline_bpm <= 160):
         raise HTTPException(status_code=400, detail="FHR baseline outside physiological range 110-160 bpm")
 
-def _ml_predict(signal: Optional[list[float]]) -> tuple[int, float]:
-    # In production: call TorchServe or load local model
-    # Placeholder: rule-based
-    return 0, 0.92  # Normal, 0.92
+def _ml_predict(features_21: Optional[list[float]]) -> tuple[int, float, str]:
+    """Retourne (classe, confiance, version_modèle)."""
+    if features_21 is not None and ml_ctg.model_available():
+        try:
+            cls, conf = ml_ctg.predict_from_features(features_21)
+            return cls, conf, "ctg-tabular-2.0"
+        except Exception:
+            pass
+    return 0, 0.92, "rules-fallback"
 
 def _llm_analyze(baseline_bpm: float, stv_ms: float, ml_class: int, confidence: float) -> str:
+    from shared.prompt_system import build_llm_system_prompt
+
     model_id = router_llm.route(task=TaskType.FAST_ANALYSIS, urgency="critical")
     api_model = router_llm.get_api_model_id(model_id)
-    prompt = f"""Tu es un expert obstétricien. CTG: baseline FHR={baseline_bpm} bpm, STV={stv_ms} ms.
-Classification ML: {CLASSES[ml_class]} (confiance {confidence:.2f}). Donne un résumé narratif ~150 mots selon FIGO 2015, avec recommandations. Pas de diagnostic final."""
+    system = build_llm_system_prompt("CTGAnalysisPrompt")
+    user_msg = f"""Données CTG : baseline FHR={baseline_bpm} bpm, STV={stv_ms} ms.
+Classification ML : {CLASSES[ml_class]} (confiance {confidence:.2f}).
+Produis un résumé narratif ~150 mots conforme à ton rôle (FIGO 2015, NICE NG229), avec recommandations et niveau de confiance. Pas de diagnostic final."""
     try:
         if "claude" in model_id.lower():
             import anthropic
             c = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY", ""))
-            r = c.messages.create(model=api_model, max_tokens=512, messages=[{"role": "user", "content": prompt}])
+            r = c.messages.create(
+                model=api_model,
+                max_tokens=512,
+                system=system,
+                messages=[{"role": "user", "content": user_msg}],
+            )
             text = r.content[0].text if r.content else ""
         else:
             text = f"Analyse FIGO: baseline {baseline_bpm} bpm, variabilité STV {stv_ms} ms. Classification {CLASSES[ml_class]}. Validation clinique recommandée."
@@ -79,7 +111,9 @@ Classification ML: {CLASSES[ml_class]} (confiance {confidence:.2f}). Donne un r�
 def ctg_monitor(input_data: CTGInput) -> CTGOutput:
     start = time.perf_counter()
     _validate_signal(input_data.baseline_bpm)
-    ml_class, confidence = _ml_predict(input_data.signal_60s)
+    if input_data.features_21 is not None and len(input_data.features_21) != 21:
+        raise HTTPException(status_code=400, detail="features_21 doit contenir exactement 21 valeurs (ordre fetal_health.csv)")
+    ml_class, confidence, model_ver = _ml_predict(input_data.features_21)
     classification = CLASSES[ml_class]
     hitl_required = classification == "Pathologique" or (classification == "Suspect" and confidence < 0.95)
     escalation_level = 2 if classification == "Pathologique" else (1 if classification == "Suspect" else None)
@@ -92,7 +126,7 @@ def ctg_monitor(input_data: CTGInput) -> CTGOutput:
         action="analyze",
         input_hash=input_hash,
         output_hash=output_hash,
-        model_version="ctg-classifier-1.0",
+        model_version=model_ver,
         confidence=confidence,
         human_decision="required" if hitl_required else None,
         latency_ms=latency_ms,

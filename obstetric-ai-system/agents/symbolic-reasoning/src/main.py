@@ -9,9 +9,13 @@ from typing import Any
 
 from fastapi import FastAPI
 from pydantic import BaseModel
+import json
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+
+_OBS = Path(__file__).resolve().parents[3]
+if str(_OBS) not in sys.path:
+    sys.path.insert(0, str(_OBS))
 from shared.llm_router import LLMRouter
 from shared.llm_router.router import TaskType
 from shared.audit_logger import AuditLogger
@@ -32,14 +36,23 @@ class SymbolicOutput(BaseModel):
 @app.post("/api/symbolic-reasoning", response_model=SymbolicOutput)
 def symbolic_reasoning(input_data: SymbolicInput) -> SymbolicOutput:
     start = time.perf_counter()
+    from shared.prompt_system import build_llm_system_prompt
+
     model_id = router_llm.route(task=TaskType.REASONING, complexity="high")
-    prompt = """Tu es un expert en recommandations obstétricales (HAS 2022, FIGO 2015, CNGOF).
-Analyse le bundle FHIR fourni et indique: 1) conformité aux protocoles, 2) nombre d'écarts, 3) résumé narratif ~200 mots avec références. Pas de diagnostic."""
+    system = build_llm_system_prompt("GuidelineCompliancePrompt")
+    bundle_excerpt = json.dumps(input_data.bundle, ensure_ascii=False, default=str)[:14000]
+    user_msg = f"""Bundle FHIR (extrait JSON) des sorties agents :\n{bundle_excerpt}\n\n
+Indique : 1) conformité aux guidelines citées dans ton prompt, 2) nombre d'écarts majeurs/mineurs, 3) résumé narratif ~200 mots avec références. Pas de diagnostic."""
     try:
         if os.getenv("ANTHROPIC_API_KEY"):
             import anthropic
             c = anthropic.Anthropic()
-            r = c.messages.create(model="claude-opus-4-20250514", max_tokens=600, messages=[{"role": "user", "content": prompt}])
+            r = c.messages.create(
+                model="claude-opus-4-20250514",
+                max_tokens=600,
+                system=system,
+                messages=[{"role": "user", "content": user_msg}],
+            )
             narrative = r.content[0].text if r.content else "Conformité analysée. Aucun écart majeur détecté."
         else:
             narrative = "Analyse de conformité HAS/FIGO/CNGOF. Validation clinique recommandée pour tout écart."

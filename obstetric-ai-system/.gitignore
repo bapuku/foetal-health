@@ -48,3 +48,4 @@ Thumbs.db
 *.pt
 *.onnx
 *.mar
+!agents/ctg_monitor/model/ctg_classifier.pt

@@ -1,0 +1,6 @@
+{
+  "val_accuracy": 0.8943661971830986,
+  "val_f1_weighted": 0.8980206434420597,
+  "best_val_loss": 0.47474047541618347,
+  "epochs_ran": 33
+}

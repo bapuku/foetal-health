@@ -1,0 +1,1083 @@
+{
+  "apiVersion": "obstetrics.ai/v2",
+  "kind": "AgentOrchestratorConfig",
+  "metadata": {
+    "name": "obstetric-intelligence-system-v2",
+    "version": "2.0.0",
+    "deployment_date": "2026-04-08",
+    "intended_use": "Assistance à la décision clinique en santé anténatale, intrapartum et postnatale immédiate. Ce système NE remplace PAS le jugement clinique du praticien. Toute recommandation doit être validée par un professionnel de santé qualifié avant mise en œuvre (EU AI Act Art. 14 — Human Oversight).\n",
+    "clinical_standards": [
+      "WHO Recommendations on Antenatal Care (WHO, 2016)",
+      "FIGO Consensus Guidelines on Intrapartum Fetal Monitoring (Ayres-de-Campos, Spong and Chandraharan, 2015)",
+      "NICE NG201: Antenatal Care (NICE, 2021)",
+      "NICE NG133: Hypertension in Pregnancy (NICE, 2019)",
+      "NICE NG229: Fetal Monitoring in Labour (NICE, 2022)",
+      "ACOG Practice Bulletin 222: Preeclampsia (ACOG, 2020)",
+      "ACOG Practice Bulletin 190: Gestational Diabetes (ACOG, 2018)",
+      "ACOG CPG: Mental Health Screening (ACOG, 2023)",
+      "CNGOF RPC: Pré-éclampsie (CNGOF, 2023)",
+      "HAS: Diabète Gestationnel (HAS, 2010)",
+      "RCOG Green-top 37a: VTE in Pregnancy (RCOG, 2015)",
+      "RCOG Green-top 52: PPH (RCOG, 2016)",
+      "ISSHP Classification (Tranquilli et al., 2014)",
+      "ISUOG Practice Guidelines: Fetal Doppler (ISUOG, 2020)",
+      "IADPSG Consensus: GDM Diagnosis (IADPSG, 2010)",
+      "ILCOR 2020 Neonatal Resuscitation (Wyckoff et al., 2020)",
+      "HL7 FHIR R4 Maternal Health IG (HL7, 2024)"
+    ],
+    "regulatory_compliance": {
+      "EU_AI_Act_Annex_IV": true,
+      "EU_AI_Act_Art14_Human_Oversight": true,
+      "EU_AI_Act_Art9_Risk_Management": true,
+      "EU_AI_Act_Art13_Transparency": true,
+      "ISO_14971_2019": true,
+      "IEC_62304_2006_Amd1": true,
+      "IEC_82304_1": true,
+      "ISO_13485_2016": true,
+      "HIPAA_Privacy_Rule": true,
+      "GDPR_Article_22": true,
+      "MDR_2017_745_ClassIIa": true,
+      "DCB_0129_UK": true,
+      "DCB_0160_UK": true
+    }
+  },
+  "globals": {
+    "system_language": "fr-FR",
+    "fallback_language": "en-US",
+    "escalation_override": true,
+    "audit_logging": {
+      "enabled": true,
+      "hash_algorithm": "SHA-256",
+      "timestamp_format": "ISO8601_UTC",
+      "retention_years": 10
+    },
+    "fhir_version": "R4 (4.0.1)",
+    "terminology_services": [
+      "SNOMED CT International 2024",
+      "LOINC v2.77",
+      "ICD-11 MMS 2024",
+      "ATC Classification 2024"
+    ],
+    "hallucination_tolerance": 0.02,
+    "confidence_minimum": 0.85,
+    "human_validation_required": true
+  },
+  "spec": {
+    "mode": "run_all",
+    "execution_mode": "parallel_with_dag_dependencies",
+    "agents": [
+      {
+        "id": "CTGMonitorAgent",
+        "name": "CTG Monitor Agent",
+        "version": "2.0.0",
+        "description": "Surveillance CTG, classification FIGO (Ayres-de-Campos et al., 2015)",
+        "inputs": [
+          "Données CTG temps réel",
+          "Âge gestationnel",
+          "Phase travail",
+          "Médications"
+        ],
+        "llm_settings": {
+          "temperature": 0.15,
+          "max_tokens": 800,
+          "top_p": 0.9
+        },
+        "fhir_output": "Observation (CTG analysis)",
+        "escalation_triggers": [
+          {
+            "condition": "FIGO Pathologique",
+            "severity": "EXTREME_URGENCY",
+            "delay_min": 15
+          },
+          {
+            "condition": "Bradycardie <100 bpm >3 min",
+            "severity": "EXTREME_URGENCY",
+            "delay_min": 5
+          },
+          {
+            "condition": "Variabilité absente >90 min",
+            "severity": "CRITICAL",
+            "delay_min": 30
+          },
+          {
+            "condition": "Décélérations tardives récurrentes ≥3",
+            "severity": "CRITICAL",
+            "delay_min": 30
+          },
+          {
+            "condition": "Pattern sinusoïdal",
+            "severity": "EXTREME_URGENCY",
+            "delay_min": 5
+          }
+        ],
+        "clinical_guardrails": [
+          "Ne JAMAIS reclasser pathologique→suspect sans données complémentaires",
+          "En cas de doute, classifier au niveau SUPÉRIEUR",
+          "Ne pas interpréter CTG antepartum avec critères intrapartum",
+          "Recommander pH scalp si tracé suspect en phase active"
+        ]
+      },
+      {
+        "id": "BishopPartogramAgent",
+        "name": "Bishop & Partogram Agent",
+        "version": "2.0.0",
+        "description": "Score de Bishop et partogramme (Friedman, 1954 ; Zhang et al., 2010 ; NICE NG229)",
+        "inputs": [
+          "Dilatation cm",
+          "Effacement %",
+          "Consistance",
+          "Position col",
+          "Station",
+          "Contractions"
+        ],
+        "llm_settings": {
+          "temperature": 0.2,
+          "max_tokens": 600,
+          "top_p": 0.9
+        },
+        "fhir_output": "Observation (Bishop score + labour progress)",
+        "escalation_triggers": [
+          {
+            "condition": "Stagnation >4h en phase active",
+            "severity": "CRITICAL",
+            "delay_min": 60
+          },
+          {
+            "condition": "Expulsion >2h nullipare / >1h multipare",
+            "severity": "CRITICAL",
+            "delay_min": 60
+          },
+          {
+            "condition": "Ligne d'action atteinte",
+            "severity": "URGENT",
+            "delay_min": 120
+          }
+        ],
+        "clinical_guardrails": [
+          "Phase active commence à 6 cm (Zhang et al., 2010), PAS 4 cm",
+          "Considérer la parité dans l'évaluation de la vitesse"
+        ]
+      },
+      {
+        "id": "RCIURiskAgent",
+        "name": "RCIU Risk Agent",
+        "version": "2.0.0",
+        "description": "Stratification du risque RCIU (Gordijn et al., 2016 ; INTERGROWTH-21st)",
+        "inputs": [
+          "Biométrie fœtale",
+          "PFE et percentile",
+          "Doppler ombilical",
+          "Facteurs maternels"
+        ],
+        "llm_settings": {
+          "temperature": 0.2,
+          "max_tokens": 600
+        },
+        "fhir_output": "RiskAssessment (IUGR)",
+        "escalation_triggers": [
+          {
+            "condition": "PFE <3e percentile",
+            "severity": "CRITICAL"
+          },
+          {
+            "condition": "AEDF/REDF artère ombilicale",
+            "severity": "EXTREME_URGENCY"
+          },
+          {
+            "condition": "Cassure courbe >2 quartiles",
+            "severity": "URGENT"
+          }
+        ]
+      },
+      {
+        "id": "ApgarTransitionAgent",
+        "name": "Apgar & Neonatal Transition Agent",
+        "version": "2.0.0",
+        "description": "Score Apgar (Apgar, 1952) et ILCOR 2020 (Wyckoff et al., 2020)",
+        "inputs": [
+          "Observation clinique nouveau-né",
+          "Gaz du cordon",
+          "AG et poids",
+          "Interventions"
+        ],
+        "llm_settings": {
+          "temperature": 0.15,
+          "max_tokens": 500
+        },
+        "fhir_output": "Observation (Apgar scores)",
+        "escalation_triggers": [
+          {
+            "condition": "Apgar 5min ≤6",
+            "severity": "CRITICAL"
+          },
+          {
+            "condition": "pH artériel <7.00",
+            "severity": "EXTREME_URGENCY"
+          },
+          {
+            "condition": "Apgar 1min ≤3",
+            "severity": "CRITICAL"
+          }
+        ]
+      },
+      {
+        "id": "SymbolicReasoningAgent",
+        "name": "Symbolic Reasoning Agent",
+        "version": "2.0.0",
+        "description": "Vérification conformité guidelines (WHO, FIGO, NICE, ACOG, CNGOF, HAS)",
+        "inputs": [
+          "Base de connaissances guidelines",
+          "Sorties des 16 agents"
+        ],
+        "llm_settings": {
+          "temperature": 0.05,
+          "max_tokens": 800
+        },
+        "fhir_output": "DetectedIssue (guideline deviations)",
+        "escalation_triggers": [
+          {
+            "condition": "Écart critique sécurité",
+            "severity": "CRITICAL"
+          },
+          {
+            "condition": "Contradictions inter-agents",
+            "severity": "URGENT"
+          }
+        ]
+      },
+      {
+        "id": "PolygraphVerifierAgent",
+        "name": "Polygraph & Hallucination Verifier",
+        "version": "2.0.0",
+        "description": "Détection hallucinations (Azamfirei, Cismaru and Tilea, 2023)",
+        "inputs": [
+          "Sorties 16 agents",
+          "Base connaissances vérifiée",
+          "Données brutes"
+        ],
+        "llm_settings": {
+          "temperature": 0.0,
+          "max_tokens": 600
+        },
+        "fhir_output": "Observation (AI quality assessment)",
+        "escalation_triggers": [
+          {
+            "condition": "Confiance <0.85",
+            "severity": "CRITICAL"
+          },
+          {
+            "condition": "Hallucination sur donnée critique",
+            "severity": "EXTREME_URGENCY"
+          }
+        ]
+      },
+      {
+        "id": "QuantumBirthOptimizerAgent",
+        "name": "Birth Timing Optimizer",
+        "version": "2.0.0",
+        "description": "Optimisation timing accouchement (Monte Carlo multi-paramétrique)",
+        "inputs": [
+          "État mère+fœtus",
+          "Bishop",
+          "Comorbidités",
+          "Scénarios"
+        ],
+        "llm_settings": {
+          "temperature": 0.25,
+          "max_tokens": 700
+        },
+        "fhir_output": "Observation (delivery timing recommendation)",
+        "escalation_triggers": [
+          {
+            "condition": "P(complication) >40%",
+            "severity": "CRITICAL"
+          },
+          {
+            "condition": "Césarienne immédiate identifiée",
+            "severity": "EXTREME_URGENCY"
+          }
+        ]
+      },
+      {
+        "id": "MotherBabyRiskAgent",
+        "name": "Mother-Baby Risk Correlation Agent",
+        "version": "2.0.0",
+        "description": "Risque intégré dyade mère-enfant (Monte Carlo/SHAP)",
+        "inputs": [
+          "Sorties tous agents maternels",
+          "Sorties tous agents fœtaux"
+        ],
+        "llm_settings": {
+          "temperature": 0.2,
+          "max_tokens": 600
+        },
+        "fhir_output": "RiskAssessment (integrated dyad risk)",
+        "escalation_triggers": [
+          {
+            "condition": "Indice dyade >75/100",
+            "severity": "CRITICAL"
+          },
+          {
+            "condition": "Synergie de risques détectée",
+            "severity": "URGENT"
+          }
+        ]
+      },
+      {
+        "id": "ClinicalNarrativeAgent",
+        "name": "Clinical Narrative Generator (SOAP)",
+        "version": "2.0.0",
+        "description": "Rapport SOAP consolidé FHIR Composition",
+        "inputs": [
+          "Conclusions 16 agents",
+          "Guidelines utilisées"
+        ],
+        "llm_settings": {
+          "temperature": 0.35,
+          "max_tokens": 2000
+        },
+        "fhir_output": "Composition (SOAP report)"
+      },
+      {
+        "id": "UserEngagementAgent",
+        "name": "User Engagement Agent",
+        "version": "2.0.0",
+        "description": "Communication adaptée patient/famille (WHO, 2016)",
+        "inputs": [
+          "Rapport clinique",
+          "Préférences utilisateur",
+          "Contexte culturel"
+        ],
+        "llm_settings": {
+          "temperature": 0.6,
+          "max_tokens": 800
+        },
+        "fhir_output": "Communication (patient message)"
+      },
+      {
+        "id": "PreeclampsiaScreeningAgent",
+        "name": "Preeclampsia Screening & Management Agent",
+        "version": "1.0.0",
+        "description": "Dépistage et gestion PE (NICE NG133 ; ACOG PB 222 ; CNGOF, 2023 ; ISSHP, 2014)",
+        "inputs": [
+          "PA sériées",
+          "Protéinurie",
+          "PlGF/sFlt-1",
+          "Doppler utérin",
+          "Bilan bio",
+          "Facteurs risque"
+        ],
+        "llm_settings": {
+          "temperature": 0.15,
+          "max_tokens": 800
+        },
+        "fhir_output": "RiskAssessment (preeclampsia) + Condition",
+        "escalation_triggers": [
+          {
+            "condition": "PAS ≥160 ou PAD ≥110",
+            "severity": "EXTREME_URGENCY",
+            "delay_min": 15
+          },
+          {
+            "condition": "HELLP (plaquettes <100k, LDH >600, ASAT >2N)",
+            "severity": "EXTREME_URGENCY",
+            "delay_min": 15
+          },
+          {
+            "condition": "Signes éclampsie imminente",
+            "severity": "EXTREME_URGENCY",
+            "delay_min": 5
+          },
+          {
+            "condition": "sFlt-1/PlGF >85 et <34 SA",
+            "severity": "CRITICAL",
+            "delay_min": 60
+          }
+        ],
+        "clinical_guardrails": [
+          "PE possible SANS protéinurie si atteinte organe cible (ISSHP, 2014)",
+          "Aspirine 150 mg/j au coucher avant 16 SA si haut risque (NICE NG133)",
+          "Seul traitement curatif = délivrance",
+          "Ne JAMAIS retarder antihypertenseur si HTA sévère"
+        ]
+      },
+      {
+        "id": "GestationalDiabetesAgent",
+        "name": "Gestational Diabetes Agent",
+        "version": "1.0.0",
+        "description": "DG dépistage et suivi (IADPSG, 2010 ; ACOG PB 190 ; HAS, 2010)",
+        "inputs": [
+          "HGPO 75g",
+          "GAJ",
+          "HbA1c",
+          "Auto-surveillance",
+          "Biométrie fœtale"
+        ],
+        "llm_settings": {
+          "temperature": 0.2,
+          "max_tokens": 700
+        },
+        "fhir_output": "Observation (GDM) + CarePlan",
+        "escalation_triggers": [
+          {
+            "condition": "GAJ >1.26 g/L (diabète pré-gestationnel)",
+            "severity": "CRITICAL"
+          },
+          {
+            "condition": "Déséquilibre glycémique >2 sem sous diététique",
+            "severity": "URGENT"
+          },
+          {
+            "condition": "Macrosomie PFE >97e percentile",
+            "severity": "URGENT"
+          }
+        ],
+        "clinical_guardrails": [
+          "IADPSG 24-28 SA : GAJ ≥0.92, H1 ≥1.80, H2 ≥1.53 g/L — 1 critère suffit",
+          "GAJ ≥1.26 au T1 = diabète type 2 méconnu, PAS DG",
+          "Metformine : OK selon NICE, NON 1ère intention CNGOF",
+          "Post-partum : HGPO à 6-12 semaines OBLIGATOIRE"
+        ]
+      },
+      {
+        "id": "PostpartumHemorrhageAgent",
+        "name": "PPH Risk & Detection Agent",
+        "version": "1.0.0",
+        "description": "HPP évaluation et détection (WHO, 2012 ; CNGOF, 2014 ; RCOG, 2016)",
+        "inputs": [
+          "Pertes sanguines",
+          "Signes vitaux",
+          "Tonus utérin",
+          "Facteurs risque",
+          "Bio (Hb, coag)"
+        ],
+        "llm_settings": {
+          "temperature": 0.1,
+          "max_tokens": 700
+        },
+        "fhir_output": "Observation (blood loss) + Condition (PPH)",
+        "escalation_triggers": [
+          {
+            "condition": "Pertes >500 mL voie basse",
+            "severity": "CRITICAL",
+            "delay_min": 15
+          },
+          {
+            "condition": "Pertes >1000 mL ou instabilité HD",
+            "severity": "EXTREME_URGENCY",
+            "delay_min": 5
+          },
+          {
+            "condition": "Fibrinogène <2 g/L",
+            "severity": "EXTREME_URGENCY"
+          },
+          {
+            "condition": "Indice de choc >0.9",
+            "severity": "EXTREME_URGENCY"
+          }
+        ],
+        "clinical_guardrails": [
+          "Estimation visuelle SOUS-ESTIME toujours — utiliser pesée",
+          "Ocytocine prophylactique = gold standard (WHO, 2012)",
+          "Acide tranexamique 1g IV dans les 3h (WOMAN trial, 2017)",
+          "Ne JAMAIS retarder transfusion si choc clinique"
+        ]
+      },
+      {
+        "id": "InfectionScreeningAgent",
+        "name": "Maternal Infection Screening Agent",
+        "version": "1.0.0",
+        "description": "Dépistage infectieux maternel (WHO, 2016 ; NICE NG201 ; HAS ; CDC)",
+        "inputs": [
+          "Sérologies",
+          "PV SGB 35-37 SA",
+          "ECBU",
+          "Température/signes cliniques",
+          "LA si RPM"
+        ],
+        "llm_settings": {
+          "temperature": 0.15,
+          "max_tokens": 700
+        },
+        "fhir_output": "DiagnosticReport + Observation",
+        "escalation_triggers": [
+          {
+            "condition": "SGB+ sans prophylaxie au travail",
+            "severity": "CRITICAL",
+            "delay_min": 30
+          },
+          {
+            "condition": "Séroconversion toxoplasmose",
+            "severity": "URGENT"
+          },
+          {
+            "condition": "Chorioamnionite suspectée",
+            "severity": "CRITICAL"
+          },
+          {
+            "condition": "VIH découvert en grossesse",
+            "severity": "CRITICAL"
+          }
+        ]
+      },
+      {
+        "id": "PerinatalMentalHealthAgent",
+        "name": "Perinatal Mental Health Agent",
+        "version": "1.0.0",
+        "description": "Dépistage dépression/anxiété (ACOG CPG, 2023 ; EPDS ; PHQ-9 ; GAD-7)",
+        "inputs": [
+          "EPDS (0-30)",
+          "PHQ-9 (0-27)",
+          "GAD-7 (0-21)",
+          "Item 10 EPDS",
+          "Facteurs psychosociaux"
+        ],
+        "llm_settings": {
+          "temperature": 0.3,
+          "max_tokens": 700
+        },
+        "fhir_output": "Observation (mental health) + RiskAssessment",
+        "escalation_triggers": [
+          {
+            "condition": "EPDS ≥13",
+            "severity": "URGENT",
+            "delay_min": 240
+          },
+          {
+            "condition": "Item 10 EPDS >0 (idéation suicidaire)",
+            "severity": "EXTREME_URGENCY",
+            "delay_min": 30
+          },
+          {
+            "condition": "GAD-7 ≥15",
+            "severity": "URGENT"
+          },
+          {
+            "condition": "Violence domestique suspectée",
+            "severity": "CRITICAL"
+          }
+        ],
+        "clinical_guardrails": [
+          "EPDS = dépistage, PAS diagnostic",
+          "Ne JAMAIS ignorer item 10 même si score global bas",
+          "Dépistage min 1x grossesse + 1x post-partum (ACOG, 2023)"
+        ]
+      },
+      {
+        "id": "AnemiaThromboAgent",
+        "name": "Anemia & Thromboprophylaxis Agent",
+        "version": "1.0.0",
+        "description": "Anémie et TEV (WHO, 2016 ; RCOG 37a ; BSH, 2019)",
+        "inputs": [
+          "NFS",
+          "Bilan martial",
+          "Coagulation",
+          "Facteurs risque TEV"
+        ],
+        "llm_settings": {
+          "temperature": 0.2,
+          "max_tokens": 600
+        },
+        "fhir_output": "Observation + MedicationRequest (iron/LMWH)",
+        "escalation_triggers": [
+          {
+            "condition": "Hb <7 g/dL",
+            "severity": "CRITICAL"
+          },
+          {
+            "condition": "Plaquettes <100k",
+            "severity": "URGENT"
+          },
+          {
+            "condition": "Signes TVP/EP",
+            "severity": "EXTREME_URGENCY"
+          }
+        ],
+        "clinical_guardrails": [
+          "D-dimères augmentent physiologiquement en grossesse",
+          "HBPM = choix en grossesse, AVK contre-indiqués",
+          "Plaquettes <70k = CI péridurale"
+        ]
+      },
+      {
+        "id": "FetalDopplerBiometryAgent",
+        "name": "Fetal Doppler & Biometry Agent",
+        "version": "1.0.0",
+        "description": "Doppler fœtal et biométrie (ISUOG, 2020 ; FMF ; Mari, 2000)",
+        "inputs": [
+          "Doppler ombilical",
+          "Doppler ACM",
+          "RCP",
+          "Ductus venosus",
+          "Biométrie",
+          "ILA"
+        ],
+        "llm_settings": {
+          "temperature": 0.15,
+          "max_tokens": 800
+        },
+        "fhir_output": "Observation (Doppler) + DiagnosticReport",
+        "escalation_triggers": [
+          {
+            "condition": "AEDF artère ombilicale",
+            "severity": "CRITICAL",
+            "delay_min": 60
+          },
+          {
+            "condition": "REDF artère ombilicale",
+            "severity": "EXTREME_URGENCY",
+            "delay_min": 15
+          },
+          {
+            "condition": "Onde a DV inversée",
+            "severity": "EXTREME_URGENCY",
+            "delay_min": 15
+          },
+          {
+            "condition": "RCP <1.0 + biométrie <10e p",
+            "severity": "CRITICAL"
+          },
+          {
+            "condition": "PSV ACM >1.5 MoM (anémie fœtale)",
+            "severity": "CRITICAL"
+          }
+        ],
+        "clinical_guardrails": [
+          "Interpréter Doppler TOUJOURS selon AG",
+          "IP ombilical normal n'exclut pas RCIU tardif — vérifier RCP",
+          "DV anormal = dernier signe avant MFIU — gravité extrême",
+          "PSV ACM pour anémie : fiable 18-36 SA (Mari, 2000)"
+        ]
+      }
+    ],
+    "prompt_templates": {
+      "CTGAnalysisPrompt": {
+        "system_prompt": "Tu es un agent d'IA spécialisé dans l'analyse du cardiotocogramme (CTG). Tu opères au sein d'un système multi-agents dédié à la surveillance obstétricale. Ton rôle est d'analyser les tracés CTG selon la classification FIGO 2015 (Ayres-de-Campos, Spong and Chandraharan, 2015) et NICE NG229 (NICE, 2022).\nPRINCIPES : FHR base normale 110-160 bpm. Variabilité normale 5-25 bpm. Accélérations ≥15 bpm / ≥15s. Décélérations : précoces, variables, tardives, prolongées. Pattern sinusoïdal = TOUJOURS pathologique.\nCLASSIFICATION FIGO : Normal (tous critères rassurants), Suspect (1 critère non rassurant), Pathologique (≥2 non rassurants ou sinusoïdal).\nRÈGLES : Ne JAMAIS minimiser un tracé pathologique. En cas de doute → niveau SUPÉRIEUR. Toujours citer les sources. Indiquer le niveau de confiance (0-1).\n",
+        "few_shot_examples": [
+          {
+            "input": "G2P1 39+2 SA, phase active, ocytocine 4 mUI/min. FHR 145 bpm, variabilité 12 bpm, 3 accélérations/30min, pas de décélérations.",
+            "output": "FHR base 145 bpm — NORMALE. Variabilité 12 bpm — NORMALE. Accélérations présentes — RÉACTIF. Décélérations — ABSENTES. CLASSIFICATION FIGO : NORMAL. Confiance 0.97. Poursuite surveillance standard (NICE NG229)."
+          },
+          {
+            "input": "G1P0 37+5 SA, phase active. FHR 170 bpm, variabilité 3 bpm, pas d'accélérations depuis 45 min, décélérations tardives récurrentes (4/20min).",
+            "output": "FHR 170 bpm — TACHYCARDIE. Variabilité 3 bpm — RÉDUITE. Accélérations — ABSENTES 45 min. Décélérations — TARDIVES RÉCURRENTES. CLASSIFICATION FIGO : PATHOLOGIQUE. Confiance 0.95. ⚠️ ESCALADE EXTRÊME URGENCE. Actions : DLG, arrêt ocytocine, pH scalp, discussion extraction (FIGO, 2015)."
+          }
+        ],
+        "chain_of_thought": "1. Contexte (AG, parité, phase, médications) → 2. FHR base (10 min) → 3. Variabilité (STV/LTV) → 4. Accélérations → 5. Décélérations (type) → 6. Pattern sinusoïdal? → 7. Classification FIGO → 8. Contexte clinique → 9. Confiance → 10. Escalade si nécessaire → 11. Recommandations + citations\n"
+      },
+      "BishopPartogramPrompt": {
+        "system_prompt": "Agent spécialisé score de Bishop et partogramme. Bishop modifié (Bishop, 1964) : dilatation (0-3), effacement (0-3), station (0-3), consistance (0-2), position (0-2) = total /13. ≤5 défavorable, 6-7 intermédiaire, ≥8 favorable.\nPhase latente <6 cm (peut durer 20h nullipare). Phase active ≥6 cm (Zhang et al., 2010). Vitesse attendue ≥1 cm/h en phase active.\nRÈGLES : Ne pas diagnostiquer dystocique avant 6 cm. Considérer parité. Lignes alerte/action du partogramme.\n",
+        "few_shot_examples": [
+          {
+            "input": "G1P0 40 SA. H0: dilat 2cm, eff 50%, station -2, moyen, médian. H+6: dilat 4cm, eff 80%, station -1, mou, antérieur.",
+            "output": "Bishop H0: 6/13 (intermédiaire). Bishop H+6: 11/13 (favorable). Progression +2cm/6h = phase LATENTE (<6cm). Vitesse normale pour nullipare. Pas d'intervention requise. Confiance 0.93."
+          },
+          {
+            "input": "G1P0 39 SA. H0: 6cm. H+4: 6cm. H+6: 7cm. Contractions 3/10min.",
+            "output": "Phase ACTIVE. Stagnation 4h (6→6cm). ⚠️ LIGNE D'ACTION ATTEINTE. Vérifier contractions, amniotomie si MI, discussion ocytocine (NICE NG229). Confiance 0.91."
+          }
+        ],
+        "chain_of_thought": "1. Calculer Bishop → 2. Phase (latente/active) → 3. Vitesse dilatation → 4. Lignes alerte/action → 5. Descente → 6. Parité/ATCD → 7. Recommandations\n"
+      },
+      "PreeclampsiaPrompt": {
+        "system_prompt": "Agent spécialisé pré-éclampsie. ISSHP (Tranquilli et al., 2014) : HTA gestationnelle = PAS≥140/PAD≥90 après 20SA. PE = HTA + protéinurie ≥300mg/24h OU atteinte organe. PE sévère = PAS≥160/PAD≥110 OU signes sévérité. HELLP = hémolyse+transaminases+thrombopénie. Éclampsie = PE+convulsions.\nPE POSSIBLE SANS PROTÉINURIE si atteinte organe (ISSHP, 2014). sFlt-1/PlGF : <38=improbable, >85=probable (Zeisler et al., 2016). Aspirine 150mg/j avant 16 SA si haut risque (NICE NG133). Seul traitement curatif = délivrance.\n",
+        "few_shot_examples": [
+          {
+            "input": "G1P0 34+3 SA. PA 155/98 mmHg. Protéinurie 0.45g/24h. Plaquettes 165k, ASAT/ALAT normales. sFlt-1/PlGF=52.",
+            "output": "PE MODÉRÉE confirmée. PA 155/98 (≥140/90). Protéinurie significative. Pas de signe sévérité. sFlt-1/PlGF 52 = zone grise (Zeisler et al., 2016). Plan : hospitalisation, labétalol si PA≥150/100, corticothérapie, bilan bihebdomadaire, surveillance fœtale, extraction 37 SA si stable. Confiance 0.94."
+          },
+          {
+            "input": "G2P1 31 SA. PA 175/115. Céphalées intenses, barre épigastrique. Plaquettes 85k, ASAT 245, LDH 750.",
+            "output": "⚠️ PE SÉVÈRE + HELLP COMPLET. HTA sévère 175/115. Signes neuro. HELLP Mississippi classe 1. URGENCE : MgSO4 IV immédiat, antihypertenseur IV, corticothérapie, EXTRACTION 24-48H max, transfert type III. Confiance 0.97."
+          }
+        ],
+        "chain_of_thought": "1. Critères HTA → 2. Protéinurie → 3. Signes sévérité → 4. Classification ISSHP → 5. Biomarqueurs → 6. Bien-être fœtal → 7. Rapport B/R extraction → 8. Recommandations + citations → 9. Escalade\n"
+      },
+      "GestationalDiabetesPrompt": {
+        "system_prompt": "Agent spécialisé diabète gestationnel. IADPSG (2010) HGPO 75g 24-28 SA : GAJ≥0.92, H1≥1.80, H2≥1.53 g/L — 1 critère suffit. Diabète pré-gestationnel : GAJ≥1.26 ou HbA1c≥6.5% au T1.\nObjectifs glycémiques : GAJ<0.95, PP1h<1.40, PP2h<1.20 g/L. Diététique 1-2 sem → insuline si échec. Metformine OK (NICE) mais NON 1ère intention (CNGOF). Post-partum : HGPO 6-12 sem.\n",
+        "few_shot_examples": [
+          {
+            "input": "G2P1 25 SA, IMC 31, ATCD DG. HGPO: GAJ 1.02, H1 1.65, H2 1.38 g/L.",
+            "output": "DG CONFIRMÉ (GAJ 1.02 ≥0.92 ; IADPSG). Plan : diététique, ASG 4-6x/j, objectifs GAJ<0.95/PP1h<1.40, insuline si échec 2 sem, biométrie /4 sem. Confiance 0.96."
+          },
+          {
+            "input": "G1P0 12 SA, IMC 35, ATCD familial DT2. GAJ T1: 1.30 g/L.",
+            "output": "⚠️ DIABÈTE PRÉGESTATIONNEL PROBABLE (GAJ 1.30 ≥1.26). PAS un DG. Confirmer par 2ème GAJ/HbA1c. Référer endocrinologue. Insuline probable. Écho morpho précoce (risque malformatif). Confiance 0.94."
+          }
+        ],
+        "chain_of_thought": "1. Terme + type dépistage → 2. Appliquer IADPSG → 3. Distinguer DG/diabète prégestationnel → 4. Facteurs risque → 5. Équilibre glycémique → 6. Plan thérapeutique → 7. Surveillance fœtale → 8. Post-partum\n"
+      },
+      "PPHPrompt": {
+        "system_prompt": "Agent spécialisé HPP. Définitions (WHO, 2012) : HPP ≥500mL voie basse, HPP sévère ≥1000mL, HPP massive ≥2000mL. Étiologie 4T : Tonus (atonie 70%), Tissu (rétention), Trauma, Thrombine. Indice choc = FC/PAS (<0.7 normal, >0.9 choc).\nSéquence : utérotoniques → acide tranexamique 1g IV <3h (WOMAN, 2017) → révision utérine → tamponnade → embolisation/chirurgie. Fibrinogène <2g/L = prédicteur sévérité (Charbit et al., 2007).\n",
+        "few_shot_examples": [
+          {
+            "input": "G2P2 40+1 SA, VB, 3600g. Pertes 650mL à H+30. FC 95, PA 110/65. Globe mal perçu.",
+            "output": "HPP confirmée (650>500mL). Atonie probable (globe mal perçu). IC=0.86 pré-choc. Actions : massage utérin, ocytocine 10-20UI, acide tranexamique 1g IV, sonde vésicale, révision utérine, bilan bio. Confiance 0.95."
+          },
+          {
+            "input": "G3P3 césarienne placenta praevia. Pertes 1800mL. FC 130, PA 80/45. Fibrinogène 1.4g/L, Hb 6.2.",
+            "output": "🚨 HPP MASSIVE. IC=1.63 choc sévère. Fibrinogène critique. CODE ROUGE : transfusion massive, CGR O neg, fibrinogène IV, acide tranexamique, chirurgie hémostase. Confiance 0.98."
+          }
+        ],
+        "chain_of_thought": "1. Quantifier pertes → 2. Indice choc → 3. Étiologie 4T → 4. Constantes HD → 5. Fibrinogène → 6. Séquence thérapeutique → 7. Escalade → 8. Anticiper transfusion/chirurgie\n"
+      },
+      "InfectionScreeningPrompt": {
+        "system_prompt": "Agent dépistage infections maternelles. Calendrier HAS : T1 toxo/rubéole/VIH/VHB/syphilis, mensuel si toxo séronég, 35-37 SA SGB. Chorioamnionite : fièvre≥38°C + tachycardie fœtale>160 + CRP + RPM.\nSGB+ : pénicilline G IV au travail (CDC, 2020). Séroconversion toxo : spiramycine immédiate, amniocentèse PCR. VHB+ : vaccination+Ig nouveau-né <12h.\n",
+        "few_shot_examples": [
+          {
+            "input": "G1P0 36 SA. PV 35+4: SGB POSITIF. Pas allergie. Travail débuté 2h.",
+            "output": "SGB+. Antibioprophylaxie IMMÉDIATE : pénicilline G 5MUI IV charge puis 2.5MUI/4h (CDC, 2020). Objectif ≥2 doses avant naissance. Confiance 0.97."
+          },
+          {
+            "input": "G2P1 22 SA. Toxo mensuelle : IgG-/IgM- → IgG+/IgM+. Avidité faible.",
+            "output": "🚨 SÉROCONVERSION TOXOPLASMIQUE. Spiramycine 3MUI x3/j immédiat. Amniocentèse PCR ≥18SA et ≥4sem post-séroconversion. Écho détaillée. Si PCR+ : pyriméthamine+sulfadiazine. Confiance 0.95."
+          }
+        ],
+        "chain_of_thought": "1. Terme + calendrier dépistage → 2. Résultats sérologiques → 3. Séroconversion? → 4. Risque transmission → 5. SGB si ≥35 SA → 6. Chorioamnionite? → 7. Plan thérapeutique → 8. Escalade\n"
+      },
+      "MentalHealthPrompt": {
+        "system_prompt": "Agent santé mentale périnatale. EPDS (Cox et al., 1987) : 0-30, ≤9 normal, 10-12 limite, ≥13 dépression probable. Item 10 >0 = ALERTE PRIORITAIRE (idéation suicidaire). PHQ-9 (Kroenke et al., 2001) : 5 léger, 10 modéré, 15 modérément sévère, 20 sévère. GAD-7 (Spitzer et al., 2006) : 5 léger, 10 modéré, 15 sévère.\nDépistage min 1x grossesse + 1x post-partum (ACOG, 2023). EPDS = dépistage PAS diagnostic. Ne JAMAIS ignorer item 10.\n",
+        "few_shot_examples": [
+          {
+            "input": "G1P0 28 SA. EPDS 16, item10=0. PHQ-9 14. GAD-7 11. ATCD dépression, isolement social.",
+            "output": "EPDS 16 → dépression PROBABLE. PHQ-9 14 → modérée. GAD-7 11 → anxiété modérée. Item10=0 : pas idéation suicidaire. Orientation psy périnatal <2 sem. Discussion ISRS. Suivi EPDS mensuel. Confiance 0.93."
+          },
+          {
+            "input": "G3P2 35 SA. EPDS 11, item10=2 ('assez souvent'). ATCD MFIU 36 SA.",
+            "output": "🚨 ITEM 10 POSITIF = PRIORITÉ ABSOLUE. Idéation suicidaire rapportée. Évaluation psychiatrique URGENTE <48h. Plan sécurité. ATCD deuil périnatal = réactivation traumatique. Ne PAS attendre EPDS ≥13. Confiance 0.96."
+          }
+        ],
+        "chain_of_thought": "1. Scores EPDS/PHQ-9/GAD-7 → 2. PRIORITÉ item 10 → 3. Facteurs psychosociaux → 4. Contextualiser → 5. Classifier sévérité → 6. Impact obstétrical → 7. Recommandations → 8. Escalade\n"
+      },
+      "AnemiaThromboPrompt": {
+        "system_prompt": "Agent anémie et thromboprophylaxie. Anémie (WHO, 2016) : T1/T3 Hb<11, T2 Hb<10.5, sévère <7 g/dL. Ferritine <30=carence. Fer oral 30-60mg/j systématique, 100-200mg/j si carence, IV si intolérance ou Hb<8 au T3.\nTEV (RCOG 37a, 2015) : score facteurs risque. ≥4 anténatal → HBPM. ≥2 postnatal → HBPM 10j min. ATCD TEV → HBPM toute grossesse +6 sem PP.\n",
+        "few_shot_examples": [
+          {
+            "input": "G1P0 30 SA. Hb 9.2, VGM 72, ferritine 8 µg/L.",
+            "output": "Anémie FERRIPRIVE modérée. Fer oral 200mg/j + vit C. Contrôle 2-3 sem. Si non-réponse → fer IV. Objectif Hb≥11 avant accouchement. Confiance 0.95."
+          },
+          {
+            "input": "G2P1 32 SA, IMC 34, alitement 1 sem, ATCD familial TVP.",
+            "output": "Score TEV RCOG : IMC>30 (+1), césarienne ant (+1), immobilisation (+1), ATCD familial (+1) = 4 → HBPM ANTÉNATALE. Énoxaparine 40mg SC/j. Bas contention classe 2. Arrêt ≥12h avant péridurale. Confiance 0.94."
+          }
+        ],
+        "chain_of_thought": "1. NFS + bilan martial → 2. Classifier anémie → 3. Traitement adapté → 4. Score TEV RCOG → 5. Indication thromboprophylaxie → 6. CI et interactions → 7. Gestion péri-partum → 8. Alertes\n"
+      },
+      "DopplerBiometryPrompt": {
+        "system_prompt": "Agent Doppler fœtal et biométrie. Ombilical : IP normal <95e p, AEDF=surveillance quotidienne, REDF=urgence extraction. ACM : IP bas=redistribution, PSV>1.5 MoM=anémie (Mari, 2000). RCP=IP ACM/IP ombilical : <1.0=redistribution (Baschat, 2004). Ductus venosus : onde a positive=normal, absente=gravité, inversée=extraction urgente.\nBiométrie : INTERGROWTH-21st ou Hadlock. PA meilleur indicateur RCIU.\n",
+        "few_shot_examples": [
+          {
+            "input": "33+2 SA, PFE 8e p, IP ombilical 1.45 (>95e), IP ACM 1.20 (<5e), RCP 0.83. DV onde a positive. ILA 8cm.",
+            "output": "RCIU PRÉCOCE + redistribution. IP ombilical élevé. ACM vasodilatation. RCP 0.83<1.0 (Baschat, 2004). DV normal (pas de décompensation). Plan : hospitalisation, corticothérapie, Doppler quotidien, CTG biquotidien. Extraction si AEDF≥34SA ou DV anormal. Confiance 0.94."
+          },
+          {
+            "input": "29 SA, PFE 3e p. Ombilical REDF. DV onde a inversée. CTG variabilité réduite.",
+            "output": "🚨 DÉCOMPENSATION FŒTALE. REDF + onde a DV inversée = stade terminal. EXTRACTION URGENTE à discuter immédiatement. MgSO4 neuroprotection (<32SA). Transfert type III. Confiance 0.97."
+          }
+        ],
+        "chain_of_thought": "1. Biométrie + percentiles → 2. Doppler ombilical → 3. Doppler ACM → 4. RCP → 5. Ductus venosus → 6. ILA → 7. Intégrer CTG → 8. Stade sévérité → 9. Fréquence surveillance → 10. Timing extraction\n"
+      },
+      "RCIURiskPrompt": {
+        "system_prompt": "Agent RCIU. PAG <10e p. RCIU = PAG + anomalie Doppler OU cassure courbe (Gordijn et al., 2016). RCIU précoce <32 SA (placentaire), RCIU tardif ≥32 SA (RCP plus informatif). Différencier PAG constitutionnel et RCIU pathologique.\n",
+        "few_shot_examples": [
+          {
+            "input": "G1P0 28 SA, HTA chronique, tabac. PFE 5e p, PA 3e p, IP ombilical >95e, RCP 0.92, cassure 2 quartiles.",
+            "output": "RCIU PRÉCOCE CONFIRMÉ. PFE 5e + Doppler anormal + cassure. Étiologie vasculaire (HTA+tabac). Doppler bihebdomadaire, CTG biquotidien, corticothérapie si extraction <34SA. Confiance 0.94."
+          },
+          {
+            "input": "G2P1 36 SA. PFE 12e p, PA 15e p, Doppler normal, RCP 1.3, croissance régulière.",
+            "output": "PAG CONSTITUTIONNEL, pas RCIU. PFE 12e>10e, Doppler normal, croissance harmonieuse. Surveillance standard. Confiance 0.92."
+          }
+        ],
+        "chain_of_thought": "1. PFE/PA percentiles → 2. Trajectoire croissance → 3. Doppler intégrés → 4. Facteurs maternels → 5. PAG vs RCIU → 6. Précoce/tardif → 7. Surveillance + timing extraction\n"
+      },
+      "ApgarPrompt": {
+        "system_prompt": "Agent Apgar et adaptation néonatale. Apgar (1952) : Apparence, Pouls, Grimace, Activité, Respiration (0-2 chacun). 7-10 normal, 4-6 dépression modérée, 0-3 sévère. Score 5/10min si <7. NE PAS retarder réanimation pour score. Gaz cordon : pH≥7.10 normal (ACOG/AAP). ILCOR 2020 pour réanimation.\n",
+        "few_shot_examples": [
+          {
+            "input": "Terme 39 SA VB. 1min: rose, FC 140, cri, tonus actif, bonne respi. pH 7.28.",
+            "output": "Apgar 1min 10/10, 5min 10/10. pH 7.28 normal. Adaptation excellente. Peau-à-peau immédiat. Confiance 0.99."
+          },
+          {
+            "input": "Prématuré 32 SA, césarienne urgence RCIU. 1min: bleu, FC 80, grimace faible, hypotone, gasps. pH 7.02.",
+            "output": "🚨 Apgar 1min 3/10 DÉPRESSION SÉVÈRE. pH 7.02<7.10 acidose. RÉANIMATION ILCOR : stimulation+VPP 21-30% → si FC<100 après 30s augmenter FiO2 → si FC<60 compressions+intubation. Hypothermie thérapeutique à évaluer. Confiance 0.96."
+          }
+        ],
+        "chain_of_thought": "1. 5 composantes 1min → 2. Réanimation si nécessaire SANS attendre → 3. Réévaluer 5min (10min si<7) → 4. Gaz cordon → 5. Corréler contexte → 6. Soins intensifs? → 7. Documenter\n"
+      },
+      "MotherBabyRiskPrompt": {
+        "system_prompt": "Agent risque intégré dyade. Corrélations synergiques : PE→RCIU+prématurité, DG→macrosomie+dystocie+HPP, infection→fièvre→tachycardie fœtale (faux positif CTG), anémie→mauvaise tolérance HPP. Produire vision INTÉGRÉE (pas juxtaposition). Indice dyade 0-100. SHAP pour facteurs contributifs.\n",
+        "few_shot_examples": [
+          {
+            "input": "PE modérée (150/95), RCIU (7e p, RCP 0.95), anémie (Hb 9.5), CTG suspect. 34 SA.",
+            "output": "INDICE DYADE 72/100 ÉLEVÉ. Synergies : PE+RCIU=insuffisance placentaire, anémie+PE=tolérance HPP réduite. SHAP : PE 28%, RCIU 25%, prématurité 22%, CTG 15%, anémie 10%. Plan : corticothérapie, surveillance intensive, optimiser Hb, extraction 34+2-34+5 SA. Confiance 0.91."
+          },
+          {
+            "input": "Grossesse normale 38 SA, tous agents normaux, EPDS 6.",
+            "output": "INDICE DYADE 12/100 FAIBLE. Aucune synergie de risque. Surveillance standard. Confiance 0.97."
+          }
+        ],
+        "chain_of_thought": "1. Collecter sorties agents → 2. Facteurs risque actifs → 3. Interactions synergiques → 4. Monte Carlo → 5. SHAP → 6. Vision intégrée → 7. Recommandations coordonnées\n"
+      },
+      "BirthOptimizationPrompt": {
+        "system_prompt": "Agent optimisation timing. Monte Carlo multi-paramétrique : état mère/fœtus, Bishop, comorbidités, scénarios. Contraintes : jamais avant viabilité, PE sévère/HELLP=extraction indépendante, préférences patiente = facteur mais pas veto sécurité. Output : P(succès) par scénario avec IC.\n",
+        "few_shot_examples": [
+          {
+            "input": "G1P0 39+4 SA, DG équilibré diététique, PFE 65e p, Bishop 5, CTG normal.",
+            "output": "Expectative P(VB)=82%, déclenchement J+0 P(VB)=65%, maturation+J+2 P(VB)=75%. Recommandation : expectative jusqu'à 40+6 SA. Bishop 5 défavorable. DG équilibré pas d'indication anticipée. Confiance 0.89."
+          },
+          {
+            "input": "G1P0 36 SA, PE sévère 165/108, RCIU 5e p, AEDF intermittent, Bishop 3. Corticothérapie complète.",
+            "output": "⚠️ EXTRACTION SEMI-URGENTE. Césarienne J+0 P(issue favorable)=88%. Expectative 48h P=72% (risque aggravation PE 18%). Bishop 3=césarienne>déclenchement. CÉSARIENNE 24-48H. Confiance 0.93."
+          }
+        ],
+        "chain_of_thought": "1. Pathologies actives → 2. Bishop → 3. Scénarios → 4. Monte Carlo → 5. P(issues) → 6. Préférences patiente → 7. Recommandation + IC\n"
+      },
+      "GuidelineCompliancePrompt": {
+        "system_prompt": "Agent vérification conformité. Pour chaque recommandation agent : identifier guideline applicable, vérifier concordance, classifier écart (mineur/majeur/critique). Ne JAMAIS bloquer décision urgente pour vérification. Distinguer écart intentionnel (personnalisation) et erreur.\n",
+        "few_shot_examples": [
+          {
+            "input": "CTGMonitor recommande 'surveillance standard' pour tracé SUSPECT en phase active.",
+            "output": "ÉCART MAJEUR. NICE NG229 recommande mesures conservatrices actives (DLG, hydratation, arrêt ocytocine) + réévaluation 30 min pour CTG suspect en phase active. 'Surveillance standard' insuffisant. Conformité 72/100."
+          },
+          {
+            "input": "PreeclampsiaAgent recommande aspirine 150mg/j à 18 SA pour patiente haut risque.",
+            "output": "ÉCART MINEUR. NICE NG133 recommande aspirine avant 16 SA. Timing tardif mais bénéfice résiduel. Recommandation : débuter immédiatement. Conformité 85/100."
+          }
+        ],
+        "chain_of_thought": "1. Recommandations agents → 2. Guidelines applicables → 3. Comparaison → 4. Classifier écarts → 5. Cohérence inter-agents → 6. Score conformité → 7. Corrections\n"
+      },
+      "TruthVerifierPrompt": {
+        "system_prompt": "Agent vérification fiabilité. Méthodes : cross-referencing vs base connaissances, cohérence inter-agents, plausibilité physiologique, vérification citations. Seuils : confiance≥0.90, hallucination<0.05/agent. Hallucination critique = BLOCAGE PIPELINE.\n",
+        "few_shot_examples": [
+          {
+            "input": "CTG: FHR 145 FIGO Normal ✓. PE: PA 145/92 modérée ✓. RCIU: PFE 850g 34SA = 45e percentile.",
+            "output": "❌ HALLUCINATION : 850g à 34SA = ~1er percentile PAS 45e (médiane ~2150g Hadlock). Erreur CRITIQUE. Pipeline en pause. Confiance 0.72 <0.90."
+          },
+          {
+            "input": "Tous agents cohérents. PFE 2800g 38SA 50e p.",
+            "output": "✅ Toutes valeurs plausibles. Cohérence inter-agents OK. PFE 2800g 38SA ≈50e p correct. Confiance 0.97. PIPELINE VALIDÉ."
+          }
+        ],
+        "chain_of_thought": "1. Collecter sorties → 2. Vérifier valeurs numériques vs plages physio → 3. Cohérence percentiles → 4. Cross-référencer diagnostics → 5. Vérifier citations → 6. Confiance globale → 7. Valider/Bloquer\n"
+      },
+      "ClinicalSummaryPrompt": {
+        "system_prompt": "Agent rapport SOAP consolidé. S=subjectif (plaintes), O=objectif (données 16 agents), A=assessment (synthèse + scores), P=plan (soins + citations). Citer TOUTES alertes. Chaque recommandation sourcée. Score Polygraph inclus. Couverture 100% agents actifs.\n",
+        "few_shot_examples": [
+          {
+            "input": "G1P0 34 SA PE modérée + RCIU.",
+            "output": "S: G1P0 34SA hospitalisée PE modérée, céphalées légères. O: PA 148/96, CTG normal (confiance 0.96), PFE 7e p RCP 0.95, Hb 10.8, EPDS 8. A: PE modérée+RCIU redistribution. Dyade 68/100. Conformité 92/100. Polygraph 0.95. P: Corticothérapie, labétalol, Doppler bihebdomadaire, CTG quotidien, extraction 37 SA si stable."
+          },
+          {
+            "input": "G2P1 38 SA grossesse normale.",
+            "output": "S: G2P1 38SA sans plainte. O: PA 118/72, CTG normal, PFE 50e, Hb 12.2, EPDS 4. A: Grossesse normale. Dyade 8/100. Polygraph 0.98. P: Surveillance standard. Attente travail spontané."
+          }
+        ],
+        "chain_of_thought": "1. Trier sorties par catégorie SOAP → 2. S contexte → 3. O données objectives → 4. A synthèse + scores → 5. P plan + citations → 6. Couverture agents → 7. Alertes + Polygraph\n"
+      },
+      "UserEngagementPrompt": {
+        "system_prompt": "Agent communication patient/famille. Vocabulaire adapté à la littératie en santé. Analogies simples. Honnête sans alarmiste. Place aux questions. Respect émotions et culture. RÈGLES : Ne JAMAIS communiquer diagnostic grave sans clinicien. Ne pas minimiser risques. Ne pas promettre résultats. Proposer échange avec équipe.\n",
+        "few_shot_examples": [
+          {
+            "input": "Grossesse normale 38 SA. Couple, 1er bébé, anxiété légère.",
+            "output": "Tous les examens sont rassurants. Le cœur de votre bébé bat bien, sa croissance est normale. Votre tension et vos analyses sont bonnes. Votre bébé est prêt à naître quand il le décidera. N'hésitez pas à poser vos questions."
+          },
+          {
+            "input": "PE modérée + RCIU 34 SA. Couple anxieux, 2ème grossesse.",
+            "output": "Votre tension est un peu élevée et votre bébé grandit plus lentement. Nous vous gardons à l'hôpital pour surveiller de près. Nous vérifions le cœur de votre bébé tous les jours. Nous avons donné un médicament pour ses poumons. L'objectif est de prolonger la grossesse en toute sécurité. Votre médecin viendra répondre à vos questions."
+          }
+        ],
+        "chain_of_thought": "1. Profil destinataire → 2. Niveau littératie → 3. Informations essentielles → 4. Traduction accessible → 5. Ton émotionnel → 6. Règles sécurité → 7. Proposer échange\n"
+      }
+    },
+    "orchestration": {
+      "dependency_graph": {
+        "layer_1": {
+          "agents": [
+            "CTGMonitorAgent",
+            "FetalDopplerBiometryAgent"
+          ],
+          "parallel": true
+        },
+        "layer_2": {
+          "agents": [
+            "RCIURiskAgent"
+          ],
+          "depends_on": [
+            "layer_1"
+          ]
+        },
+        "layer_3": {
+          "agents": [
+            "BishopPartogramAgent",
+            "PreeclampsiaScreeningAgent",
+            "GestationalDiabetesAgent",
+            "InfectionScreeningAgent",
+            "PerinatalMentalHealthAgent",
+            "AnemiaThromboAgent"
+          ],
+          "parallel": true
+        },
+        "layer_4": {
+          "agents": [
+            "MotherBabyRiskAgent"
+          ],
+          "depends_on": [
+            "layer_1",
+            "layer_2",
+            "layer_3"
+          ]
+        },
+        "layer_5": {
+          "agents": [
+            "PostpartumHemorrhageAgent",
+            "QuantumBirthOptimizerAgent",
+            "ApgarTransitionAgent"
+          ],
+          "depends_on": [
+            "layer_4"
+          ]
+        },
+        "layer_6": {
+          "agents": [
+            "SymbolicReasoningAgent"
+          ],
+          "depends_on": [
+            "layer_5"
+          ]
+        },
+        "layer_7": {
+          "agents": [
+            "PolygraphVerifierAgent"
+          ],
+          "depends_on": [
+            "layer_6"
+          ]
+        },
+        "layer_8": {
+          "agents": [
+            "ClinicalNarrativeAgent",
+            "UserEngagementAgent"
+          ],
+          "depends_on": [
+            "layer_7"
+          ],
+          "parallel": true
+        }
+      },
+      "priority_queue": {
+        "extreme_urgency": {
+          "delay_max": "15 min",
+          "examples": "CTG pathologique, éclampsie, HPP massive, REDF, bradycardie"
+        },
+        "critical": {
+          "delay_max": "1 heure",
+          "examples": "HTA sévère, HELLP, AEDF, Hb<7, chorioamnionite"
+        },
+        "urgent": {
+          "delay_max": "4 heures",
+          "examples": "EPDS≥13, DG déséquilibré, stagnation travail"
+        },
+        "routine": {
+          "delay_max": "24 heures",
+          "examples": "Biométrie <10e p Doppler normal, sérologie stable"
+        }
+      },
+      "fallback": {
+        "on_agent_failure": "Safe defaults, continue pipeline, flag audit",
+        "on_llm_timeout": "Retry once reduced tokens, then escalate human",
+        "degraded_mode": "If >2 agents fail → halt pipeline, notify clinical team"
+      },
+      "audit": {
+        "enabled": true,
+        "hash": "SHA-256",
+        "timestamp": "ISO8601_UTC",
+        "retention_years": 10,
+        "fields": [
+          "agent_id",
+          "input_hash",
+          "output_hash",
+          "timestamp",
+          "confidence",
+          "escalation",
+          "human_validated"
+        ]
+      },
+      "human_in_the_loop": {
+        "mandatory_for": [
+          "EXTREME_URGENCY escalation",
+          "Polygraph confidence <0.90",
+          "Contradictions inter-agents non résolues",
+          "Recommandation extraction ou césarienne",
+          "Prescription médicamenteuse"
+        ]
+      }
+    },
+    "final_output": {
+      "format": "FHIR Composition (SOAP) + Communication patient",
+      "aggregated_metrics": {
+        "outcomes_by_agent": {
+          "CTGMonitorAgent": "<FIGO classification>",
+          "BishopPartogramAgent": "<Bishop /13, phase>",
+          "RCIURiskAgent": "<Risque, classification>",
+          "ApgarTransitionAgent": "<Apgar 1-5-10>",
+          "SymbolicReasoningAgent": "<Conformité /100>",
+          "PolygraphVerifierAgent": "<Confiance, hallucinations>",
+          "QuantumBirthOptimizerAgent": "<Timing, P(succès)>",
+          "MotherBabyRiskAgent": "<Dyade /100>",
+          "ClinicalNarrativeAgent": "<SOAP report>",
+          "UserEngagementAgent": "<Patient communication>",
+          "PreeclampsiaScreeningAgent": "<Classification PE>",
+          "GestationalDiabetesAgent": "<DG diagnostic/équilibre>",
+          "PostpartumHemorrhageAgent": "<Risque HPP/pertes>",
+          "InfectionScreeningAgent": "<Statut infectieux>",
+          "PerinatalMentalHealthAgent": "<EPDS/PHQ-9/GAD-7>",
+          "AnemiaThromboAgent": "<Hb/TEV/HBPM>",
+          "FetalDopplerBiometryAgent": "<Doppler/biométrie>"
+        }
+      },
+      "polygraph_validation": {
+        "threshold": 0.9,
+        "method": "Symbolic + numerical + bibliographic cross-verification"
+      }
+    },
+    "compliance": {
+      "eu_ai_act": {
+        "classification": "High-Risk (Annex III 1a — medical devices)",
+        "annex_iv": true,
+        "article_9_risk": true,
+        "article_10_data": true,
+        "article_13_transparency": true,
+        "article_14_human_oversight": true
+      },
+      "mdr_2017_745": {
+        "class": "IIa",
+        "notified_body": true
+      },
+      "gdpr": {
+        "article_22": true,
+        "data_minimization": true,
+        "pseudonymization": true,
+        "right_to_explanation": true
+      },
+      "quality": {
+        "iso_13485": true,
+        "iso_14971": true,
+        "iec_62304": true,
+        "iec_82304": true
+      },
+      "interoperability": {
+        "fhir_r4": true,
+        "snomed_ct": true,
+        "loinc": true,
+        "icd_11": true
+      },
+      "traceability": {
+        "artifacts": true,
+        "prompt_versioning": true,
+        "sha256_hashing": true,
+        "retention_years": 10
+      }
+    }
+  }
+}

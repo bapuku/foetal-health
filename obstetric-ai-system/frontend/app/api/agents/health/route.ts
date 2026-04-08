@@ -19,6 +19,7 @@ const AGENTS = [
   { name: 'Clinical Narrative', service: 'clinical-narrative', port: 8008, healthPath: '/health' },
   { name: 'User Engagement', service: 'user-engagement', port: 8009, healthPath: '/health' },
   { name: 'Prenatal Follow-up', service: 'prenatal-followup', port: 8010, healthPath: '/health' },
+  { name: 'Clinical Specialists', service: 'clinical-specialists', port: 8011, healthPath: '/health' },
 ];
 
 function agentBaseUrl(service: string, port: number): string {

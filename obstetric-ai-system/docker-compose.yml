@@ -30,7 +30,7 @@ services:
     <<: *agent-common
     build:
       context: .
-      dockerfile: Dockerfile.agent
+      dockerfile: Dockerfile.ctg_monitor
       args:
         AGENT_DIR: agents/ctg_monitor
         AGENT_PORT: "8000"
@@ -136,6 +136,16 @@ services:
         AGENT_DIR: agents/prenatal-followup
         AGENT_PORT: "8010"
     command: uvicorn src.main:app --host 0.0.0.0 --port 8010
+
+  clinical-specialists:
+    <<: *agent-common
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+      args:
+        AGENT_DIR: agents/clinical_specialists
+        AGENT_PORT: "8011"
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8011
 
   # ── Nginx reverse proxy ──────────────────────────────
   nginx:
